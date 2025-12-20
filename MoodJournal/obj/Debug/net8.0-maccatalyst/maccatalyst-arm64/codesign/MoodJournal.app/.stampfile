@@ -1,1 +1,0 @@
--v --force --timestamp=none --sign - --entitlements /Users/shrineghimire/Workspace/Application Development/AD Coursework/App/MoodJournal/MoodJournal/obj/Debug/net8.0-maccatalyst/maccatalyst-arm64/Entitlements.xcent /Users/shrineghimire/Workspace/Application Development/AD Coursework/App/MoodJournal/MoodJournal/bin/Debug/net8.0-maccatalyst/maccatalyst-arm64/MoodJournal.app
