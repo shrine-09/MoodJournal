@@ -1,0 +1,160 @@
+﻿@page "/today"
+@using MudBlazor
+@using System.Linq
+
+<div class="mj-center">
+    <MudPaper Elevation="0" Class="mj-card">
+
+        <MudStack Spacing="3">
+
+            <!-- Header with title and date -->
+            <div class="mj-header-row">
+                <MudText Typo="Typo.h4" Class="mj-title">Today's Entry</MudText>
+
+                <MudText Typo="Typo.subtitle2" Class="mj-date">
+                    @_todayLabel
+                </MudText>
+            </div>
+
+            <!-- Primary Mood -->
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mj-section">Primary Mood *</MudText>
+
+                <MudText Typo="Typo.caption" Class="mj-subsection">Positive</MudText>
+                <MudChipSet T="string"
+                            SelectionMode="SelectionMode.SingleSelection"
+                            Class="mj-chips">
+                    @foreach (var m in PositiveMoods)
+                    {
+                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
+                    }
+                </MudChipSet>
+
+                <MudText Typo="Typo.caption" Class="mj-subsection mt-3">Neutral</MudText>
+                <MudChipSet T="string"
+                            SelectionMode="SelectionMode.SingleSelection"
+                            Class="mj-chips">
+                    @foreach (var m in NeutralMoods)
+                    {
+                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
+                    }
+                </MudChipSet>
+
+                <MudText Typo="Typo.caption" Class="mj-subsection mt-3">Negative</MudText>
+                <MudChipSet T="string"
+                            SelectionMode="SelectionMode.SingleSelection"
+                            Class="mj-chips">
+                    @foreach (var m in NegativeMoods)
+                    {
+                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
+                    }
+                </MudChipSet>
+            </div>
+
+            <!-- Secondary moods -->
+            <div class="mt-2">
+                <MudText Typo="Typo.subtitle1" Class="mj-section">Secondary Moods (Optional - Max 2)</MudText>
+
+                <MudChipSet T="string"
+                            SelectionMode="SelectionMode.MultiSelection"
+                            Class="mj-chips">
+
+                    @foreach (var m in AllMoods)
+                    {
+                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
+                    }
+                </MudChipSet>
+
+                @if (!string.IsNullOrWhiteSpace(_secondaryError))
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Error">@_secondaryError</MudText>
+                }
+            </div>
+
+            <!-- Title -->
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mj-section">Title (Optional)</MudText>
+                <MudTextField @bind-Value="_entryTitle"
+                              Label="Title"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense" />
+
+            </div>
+            
+            <!-- Content of journal -->
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mj-section">Content *</MudText>
+                <MudTextField @bind-Value="_entryContent"
+                              Label="What stood out today?"
+                              Variant="Variant.Outlined"
+                              Lines="8" />
+            </div>
+            
+            <!-- Category -->
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mj-section">Category (Optional)</MudText>
+                <MudTextField @bind-Value="_entryCategory"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense" />
+            </div>
+            
+            <!-- Tags -->
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mj-section">Tags (Optional)</MudText>
+                <MudChipSet T="string"
+                            Class="mj-chips">
+                    @foreach (var m in Tags)
+                    {
+                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
+                    }
+                </MudChipSet>
+                <MudTextField @bind-Value="_entryTags"
+                              Label="Custom Tags"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense" />
+
+            </div>
+            
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Medium"
+                       Class="mj-save-btn"
+                       OnClick="SaveEntry"
+                       Disabled="@string.IsNullOrWhiteSpace(_primaryMood)">
+                Save Entry
+            </MudButton>
+
+        </MudStack>
+
+    </MudPaper>
+</div>
+
+@code
+{
+    // Date lbael
+    private readonly string _todayLabel = DateTime.Now.ToString("dddd, MMMM d, yyyy");
+
+    // Fields
+    private string _entryTitle = "";
+    private string _entryContent = "";
+    private string _entryCategory = "";
+    private string _entryTags = "";
+
+    //Moods
+    private string _primaryMood = ""; // required to submit or save entry or the button wont be clickable
+    private string? _secondaryError;
+    
+    private static readonly string[] PositiveMoods = { "Happy", "Excited", "Relaxed", "Grateful", "Confident" };
+    private static readonly string[] NeutralMoods  = { "Calm", "Thoughtful", "Curious", "Nostalgic", "Bored" };
+    private static readonly string[] NegativeMoods = { "Sad", "Angry", "Stressed", "Lonely", "Anxious" };
+
+    private static readonly string[] AllMoods =
+        PositiveMoods.Concat(NeutralMoods).Concat(NegativeMoods).ToArray();
+    
+    private static readonly string[] Tags = { "Work", "Studies", "Relationship", "Fitness", "Health", "Hobbies", "Travel", "Finance" };
+    
+    private void SaveEntry()
+    {
+        // adding this after milesone 1
+    }
+}

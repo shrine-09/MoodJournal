@@ -1,0 +1,187 @@
+@page "/calendar"
+@using System.Globalization
+@using MudBlazor
+
+<MudStack Spacing="3">
+
+    <!-- Header -->
+    <MudPaper Elevation="0" Class="mj-card">
+        <MudStack Spacing="2">
+            <MudStack Direction="Row hookup" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h5" Class="mj-title">Calendar</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @(_focusedMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture))
+                    </MudText>
+                </MudStack>
+
+                <MudStack Direction="Row" Spacing="1" AlignItems="AlignItems.Center">
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft"
+                                   OnClick="PrevMonth"
+                                   Variant="Variant.Text" />
+                    <MudButton Variant="Variant.Outlined" OnClick="GoToday">
+                        Today
+                    </MudButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronRight"
+                                   OnClick="NextMonth"
+                                   Variant="Variant.Text" />
+                </MudStack>
+            </MudStack>
+
+            <!-- Specifying what color for what moods it was that day -->
+            <MudStack Direction="Row" Spacing="2" AlignItems="AlignItems.Center" Class="mj-legend">
+                <div class="mj-legend-item">
+                    <span class="mj-legend-swatch mj-fill-positive"></span>
+                    <MudText Typo="Typo.body2">Positive</MudText>
+                </div>
+
+                <div class="mj-legend-item">
+                    <span class="mj-legend-swatch mj-fill-neutral"></span>
+                    <MudText Typo="Typo.body2">Neutral</MudText>
+                </div>
+
+                <div class="mj-legend-item">
+                    <span class="mj-legend-swatch mj-fill-negative"></span>
+                    <MudText Typo="Typo.body2">Negative</MudText>
+                </div>
+                
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+
+    <!-- Grid for monht -->
+    <MudPaper Elevation="0" Class="mj-card">
+        <!-- Labels for weekday-->
+        <div class="mj-cal-grid mj-cal-header">
+            @foreach (var d in _weekdays)
+            {
+                <div class="mj-cal-cell mj-cal-dow">@d</div>
+            }
+        </div>
+
+        <!-- Days -->
+        <div class="mj-cal-grid mj-cal-body">
+            @foreach (var cell in _cells)
+            {
+                if (cell is null)
+                {
+                    <div class="mj-cal-cell mj-cal-empty"></div>
+                }
+                else
+                {
+                    var date = cell.Value;
+                    var isToday = date.Date == DateTime.Today;
+                    var isSelected = _selectedDate.HasValue && date.Date == _selectedDate.Value.Date;
+                    var moodClass = GetMoodFillClass(date.Date);
+
+                    <button class="@GetDayClass(isToday, isSelected, moodClass)"
+                            type="button"
+                            @onclick="() => SelectDay(date)">
+                        <div class="mj-cal-day-top">
+                            <span class="mj-cal-day-num">@date.Day</span>
+                        </div>
+                    </button>
+                }
+            }
+        </div>
+
+        @if (_selectedDate is not null)
+        {
+            <MudDivider Class="my-4" />
+            <MudText Typo="Typo.subtitle2">Selected:</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @_selectedDate.Value.ToString("dddd, dd MMMM yyyy", CultureInfo.InvariantCulture)
+            </MudText>
+        }
+    </MudPaper>
+
+</MudStack>
+
+@code {
+    private DateTime _focusedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime? _selectedDate = DateTime.Today;
+
+    private List<DateTime?> _cells = new();
+
+    private readonly string[] _weekdays = new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+    // Random for milestone 1
+    private readonly Dictionary<DateTime, string> _dayMood = new()
+    {
+        { DateTime.Today.Date.AddDays(-2), "Positive" },
+        { DateTime.Today.Date.AddDays(-1), "Neutral" },
+        { DateTime.Today.Date, "Negative" },
+        { DateTime.Today.Date.AddDays(1), "Positive" },
+        { DateTime.Today.Date.AddDays(2), "Neutral" },
+    };
+
+    protected override void OnInitialized()
+    {
+        BuildMonth();
+    }
+
+    private void BuildMonth()
+    {
+        _cells.Clear();
+
+        var first = new DateTime(_focusedMonth.Year, _focusedMonth.Month, 1);
+        var daysInMonth = DateTime.DaysInMonth(first.Year, first.Month);
+
+        var startOffset = (int)first.DayOfWeek;
+
+        for (int i = 0; i < startOffset; i++)
+            _cells.Add(null);
+
+        for (int day = 1; day <= daysInMonth; day++)
+            _cells.Add(new DateTime(first.Year, first.Month, day));
+
+        while (_cells.Count % 7 != 0)
+            _cells.Add(null);
+    }
+
+    private void PrevMonth()
+    {
+        _focusedMonth = _focusedMonth.AddMonths(-1);
+        BuildMonth();
+    }
+
+    private void NextMonth()
+    {
+        _focusedMonth = _focusedMonth.AddMonths(1);
+        BuildMonth();
+    }
+
+    private void GoToday()
+    {
+        _focusedMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        _selectedDate = DateTime.Today;
+        BuildMonth();
+    }
+
+    private void SelectDay(DateTime date) => _selectedDate = date.Date;
+
+    private string GetMoodFillClass(DateTime date)
+    {
+        if (_dayMood.TryGetValue(date, out var mood))
+        {
+            return mood switch
+            {
+                "Positive" => "mj-fill-positive",
+                "Neutral"  => "mj-fill-neutral",
+                "Negative" => "mj-fill-negative",
+                _ => ""
+            };
+        }
+        return "";
+    }
+
+    private string GetDayClass(bool isToday, bool isSelected, string moodClass)
+    {
+        var cls = "mj-cal-cell mj-cal-day " + moodClass;
+
+        if (isToday) cls += " mj-cal-today";
+        if (isSelected) cls += " mj-cal-selected";
+
+        return cls;
+    }
+}

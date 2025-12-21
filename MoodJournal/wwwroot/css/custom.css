@@ -1,4 +1,3 @@
-/* Fill the whole WebView and keep background consistent */
 html, body {
     height: 100%;
     margin: 0;
@@ -8,16 +7,16 @@ html, body {
     min-height: 100vh;
 }
 
-/* Use a soft background (matches your light theme) */
+/* soft bg */
 body {
     background: #f6f7fb;
 }
 
-/* (optional) make everything feel slightly more “zoomed in” */
+/* making the UI more zoomed*/
 html {
     font-size: 18px;
 }
-/* Layout shell */
+
 .mj-layout {
     background: var(--mud-palette-background);
 }
@@ -35,11 +34,10 @@ html {
     padding: 28px;
 }
 
-/* To improve dark mode*/
 body.dark .mj-card {
     background: linear-gradient(
             180deg,
-            #0f172a 0%,
+            #1b0649 0%,
             #020617 100%
     );
     box-shadow: 0 20px 40px rgba(0,0,0,0.6);
@@ -71,9 +69,10 @@ body.dark .mj-card {
     padding: 10px 12px;
 }
 
-/* Make active item look like the “pill” */
+
 .mj-navlink.active {
     background: rgba(0,0,0,0.08);
+    border-radius: 15px;
 }
 
 .mj-footer {
@@ -82,7 +81,7 @@ body.dark .mj-card {
     opacity: 0.8;
 }
 
-/* In mood section */
+/* gap for mood parts */
 .mj-moodset {
     gap: 10px;
 }
@@ -92,14 +91,14 @@ body.dark .mj-card {
     padding: 8px 14px !important;
 }
 
-/* Selected chip styling */
+/* Selected chip style */
 .mud-chip.mud-chip-selected.mj-moodchip {
     background: rgba(0,0,0,0.08) !important;
 }
 
 .mj-center {
     display: flex;
-    justify-content: flex-start; /* change to center if you want */
+    justify-content: flex-start; 
 }
 
 .mj-card {
@@ -125,4 +124,141 @@ body.dark .mj-card {
     min-width: 160px;
     border-radius: 10px;
     font-weight: 600;
+}
+
+.mj-header-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.mj-date {
+    opacity: 0.7;
+    white-space: nowrap;
+}
+
+.mj-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.mj-chip {
+    border-radius: 999px !important;
+    padding: 6px 14px !important;
+}
+
+
+/*Calendar's CSS*/
+.mj-legend {
+    margin-top: 6px;
+}
+
+.mj-legend-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.08);
+}
+
+.mj-legend-swatch{
+    width: 18px;
+    height: 12px;
+    border-radius: 6px;
+    display:inline-block;
+    border: 1px solid rgba(0,0,0,0.10);
+}
+
+.mj-cal-grid{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+.mj-cal-header{
+    margin-bottom: 10px;
+}
+
+.mj-cal-dow{
+    font-weight: 600;
+    opacity: .75;
+    text-align: center;
+    padding: 10px 0;
+}
+
+.mj-cal-cell{
+    border-radius: 14px;
+}
+
+.mj-cal-empty{
+    height: 54px;
+    opacity: 0;
+}
+
+/* Day button */
+.mj-cal-day{
+    width: 100%;
+    height: 64px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.6);
+    cursor: pointer;
+    padding: 10px 12px;
+    text-align: left;
+    transition: transform .08s ease, filter .15s ease, border-color .15s ease;
+}
+
+.mj-cal-day:hover{
+    transform: translateY(-1px);
+    border-color: rgba(0,0,0,0.18);
+    filter: brightness(0.98);
+}
+
+.mj-cal-day-top{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+}
+
+.mj-cal-day-num{
+    font-weight: 800;
+}
+
+/* Selected for today part */
+.mj-cal-today{
+    border-color: rgba(0,0,0,0.28);
+}
+
+.mj-cal-selected{
+    outline: 2px solid rgba(0,0,0,0.35);
+}
+
+/* Color of cells of calendar*/
+.mj-fill-positive{ background: rgba(246, 211, 101, 0.55) !important; } 
+.mj-fill-neutral { background: rgba(156, 163, 175, 0.35) !important; } 
+.mj-fill-negative{ background: rgba(239, 68, 68, 0.35) !important; }  
+
+
+.mud-theme-dark .mj-legend-item{
+    border-color: rgba(255,255,255,0.12);
+}
+
+.mud-theme-dark .mj-legend-swatch{
+    border-color: rgba(255,255,255,0.14);
+}
+
+.mud-theme-dark .mj-cal-day{
+    border-color: rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+}
+
+.mud-theme-dark .mj-cal-day:hover{
+    border-color: rgba(255,255,255,0.20);
+    filter: brightness(1.05);
+}
+
+.mud-theme-dark .mj-cal-selected{
+    outline: 2px solid rgba(255,255,255,0.35);
 }
