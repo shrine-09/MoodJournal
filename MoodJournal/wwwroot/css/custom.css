@@ -1,0 +1,128 @@
+/* Fill the whole WebView and keep background consistent */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+#app, .mud-layout {
+    min-height: 100vh;
+}
+
+/* Use a soft background (matches your light theme) */
+body {
+    background: #f6f7fb;
+}
+
+/* (optional) make everything feel slightly more “zoomed in” */
+html {
+    font-size: 18px;
+}
+/* Layout shell */
+.mj-layout {
+    background: var(--mud-palette-background);
+}
+
+.mj-appbar {
+    background: var(--mud-palette-appbar-background) !important;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.mj-main {
+    background: var(--mud-palette-background);
+}
+
+.mj-page {
+    padding: 28px;
+}
+
+/* To improve dark mode*/
+body.dark .mj-card {
+    background: linear-gradient(
+            180deg,
+            #0f172a 0%,
+            #020617 100%
+    );
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+}
+
+
+/* Sidebar */
+.mj-drawer {
+    background: var(--mud-palette-surface) !important;
+    border-right: 1px solid rgba(0,0,0,0.06);
+}
+
+.mj-brand {
+    padding: 22px 18px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.mj-brand-title {
+    font-weight: 700;
+}
+
+.mj-nav {
+    padding: 16px 12px;
+}
+
+.mj-navlink {
+    border-radius: 14px;
+    margin: 6px 8px;
+    padding: 10px 12px;
+}
+
+/* Make active item look like the “pill” */
+.mj-navlink.active {
+    background: rgba(0,0,0,0.08);
+}
+
+.mj-footer {
+    margin-top: auto;
+    padding: 16px 18px;
+    opacity: 0.8;
+}
+
+/* In mood section */
+.mj-moodset {
+    gap: 10px;
+}
+
+.mj-moodchip {
+    border-radius: 999px !important;
+    padding: 8px 14px !important;
+}
+
+/* Selected chip styling */
+.mud-chip.mud-chip-selected.mj-moodchip {
+    background: rgba(0,0,0,0.08) !important;
+}
+
+.mj-center {
+    display: flex;
+    justify-content: flex-start; /* change to center if you want */
+}
+
+.mj-card {
+    width: 820px;
+    max-width: 100%;
+    padding: 26px;
+    border-radius: 18px !important;
+    background: var(--mud-palette-surface);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+
+.mj-title {
+    font-weight: 800;
+}
+
+.mj-section {
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.mj-save-btn {
+    min-width: 160px;
+    border-radius: 10px;
+    font-weight: 600;
+}

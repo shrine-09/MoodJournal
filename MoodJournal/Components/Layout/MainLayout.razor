@@ -1,17 +1,92 @@
 ﻿@inherits LayoutComponentBase
+@using MudBlazor
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu/>
-    </div>
+<MudThemeProvider Theme="_customTheme" IsDarkMode="@_isDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<MudLayout Class="mj-layout">
+
+    <MudDrawer @bind-Open="@_drawerOpen"
+               Variant="DrawerVariant.Persistent"
+               Elevation="0"
+               Width="260px"
+               Class="mj-drawer">
+
+        <div class="mj-brand">
+            <MudText Typo="Typo.h5" Class="mj-brand-title">MoodJournal</MudText>
         </div>
 
-        <article class="content px-4">
+        <MudNavMenu Class="mj-nav">
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Today" Class="mj-navlink">
+                Today
+            </MudNavLink>
+            <MudNavLink Href="/calendar" Icon="@Icons.Material.Outlined.CalendarMonth" Class="mj-navlink">
+                Calendar
+            </MudNavLink>
+            <MudNavLink Href="/timeline" Icon="@Icons.Material.Outlined.Timeline" Class="mj-navlink">
+                Timeline
+            </MudNavLink>
+            <MudNavLink Href="/analytics" Icon="@Icons.Material.Outlined.Insights" Class="mj-navlink">
+                Analytics
+            </MudNavLink>
+            <MudNavLink Href="/settings" Icon="@Icons.Material.Outlined.Settings" Class="mj-navlink">
+                Settings
+            </MudNavLink>
+        </MudNavMenu>
+
+        <div class="mj-footer">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">v1.0</MudText>
+        </div>
+    </MudDrawer>
+
+    <MudMainContent Class="mj-main">
+        <MudAppBar Elevation="0" Class="mj-appbar">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                           Edge="Edge.Start"
+                           OnClick="@ToggleDrawer" />
+
+            <MudSpacer />
+
+            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Outlined.DarkMode : Icons.Material.Outlined.LightMode)"
+                           OnClick="@ToggleDarkMode" />
+        </MudAppBar>
+
+        <div class="mj-page">
             @Body
-        </article>
-    </main>
-</div>
+        </div>
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode = false;
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+    private void ToggleDarkMode() => _isDarkMode = !_isDarkMode;
+
+    private readonly MudTheme _customTheme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#111827",      
+            Secondary = "#EC4899", 
+            Surface = "#FFFFFF",
+            AppbarBackground = "#FFFFFF",
+            TextPrimary = "#111827",
+            TextSecondary = "#6B7280"
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#FFFFFF",         
+            Secondary = "#EC4899",
+            Surface = "#0F172A",
+            AppbarBackground = "#0F172A",
+            TextPrimary = "#FFFFFF",
+            TextSecondary = "#9CA3AF",
+            
+            PrimaryContrastText = "#111827"
+        }
+    };
+}
