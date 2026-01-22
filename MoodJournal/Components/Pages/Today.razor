@@ -1,160 +1,568 @@
 ﻿@page "/today"
-@using MudBlazor
-@using System.Linq
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject MoodJournal.Services.JournalRepository Repo
 
-<div class="mj-center">
-    <MudPaper Elevation="0" Class="mj-card">
+<div class="today-page">
+    <div class="page-head">
+        <div>
+            <h1 class="h1">Today's Entry</h1>
+            <div class="subtle">One entry per day — make it count!</div>
+        </div>
+    </div>
 
-        <MudStack Spacing="3">
+    <div class="today-grid">
+        <div class="today-left">
+            <div class="card entry-card">
+                <div class="entry-top">
+                    <div>
+                        <div class="entry-date">@DateTime.Today.ToString("dddd, MMMM d, yyyy")</div>
+                        <div class="entry-meta">@_wordCount words</div>
+                    </div>
 
-            <!-- Header with title and date -->
-            <div class="mj-header-row">
-                <MudText Typo="Typo.h4" Class="mj-title">Today's Entry</MudText>
+                    <div class="action-row">
+                        @if (_mode == PageMode.View)
+                        {
+                            <button type="button" class="btn-primary" @onclick="BeginEdit">Edit</button>
+                            <button type="button" class="btn-danger" @onclick="OpenDeleteDialog">Delete</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn-primary" @onclick="SaveAsync" disabled="@(!_canSave)">
+                                Save Entry
+                            </button>
 
-                <MudText Typo="Typo.subtitle2" Class="mj-date">
-                    @_todayLabel
-                </MudText>
-            </div>
+                            @if (_hasSavedEntry)
+                            {
+                                <button type="button" class="btn-ghost" @onclick="CancelEdit">Cancel</button>
+                            }
+                        }
+                    </div>
+                </div>
 
-            <!-- Primary Mood -->
-            <div>
-                <MudText Typo="Typo.subtitle1" Class="mj-section">Primary Mood *</MudText>
+                <div class="form-block">
+                    <label class="label">Title (Optional)</label>
+                    <input class="input" placeholder="Give your entry a title..." @bind="_title" disabled="@IsReadOnly" />
+                </div>
 
-                <MudText Typo="Typo.caption" Class="mj-subsection">Positive</MudText>
-                <MudChipSet T="string"
-                            SelectionMode="SelectionMode.SingleSelection"
-                            Class="mj-chips">
-                    @foreach (var m in PositiveMoods)
+                <div class="form-block">
+                    <label class="label">Content <span class="req">*</span></label>
+
+                    <div class="editor-card @(IsReadOnly ? "editor-readonly" : "")">
+                        <!-- IMPORTANT: keep only ONE element with this id in the whole app -->
+                        <div id="quillEditor" class="quill-host"></div>
+                    </div>
+
+                    <div class="hint">Write about your day. Formatting is supported.</div>
+                </div>
+
+                <div class="form-block">
+                    <label class="label">Primary Mood <span class="req">*</span></label>
+
+                    <div class="mood-group-title">Positive</div>
+                    <div class="pill-row">
+                        @foreach (var m in PositiveMoods)
+                        {
+                            <button type="button"
+                                    class="pill @(_primaryMood == m ? "pill-selected" : "")"
+                                    @onclick="() => SetPrimaryMood(m)"
+                                    disabled="@IsReadOnly">
+                                @m
+                            </button>
+                        }
+                    </div>
+
+                    <div class="mood-group-title">Neutral</div>
+                    <div class="pill-row">
+                        @foreach (var m in NeutralMoods)
+                        {
+                            <button type="button"
+                                    class="pill @(_primaryMood == m ? "pill-selected" : "")"
+                                    @onclick="() => SetPrimaryMood(m)"
+                                    disabled="@IsReadOnly">
+                                @m
+                            </button>
+                        }
+                    </div>
+
+                    <div class="mood-group-title">Negative</div>
+                    <div class="pill-row">
+                        @foreach (var m in NegativeMoods)
+                        {
+                            <button type="button"
+                                    class="pill @(_primaryMood == m ? "pill-selected" : "")"
+                                    @onclick="() => SetPrimaryMood(m)"
+                                    disabled="@IsReadOnly">
+                                @m
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="form-block">
+                    <label class="label">Secondary Moods (Optional - Max 2)</label>
+                    <div class="pill-row">
+                        @foreach (var m in AllMoods)
+                        {
+                            var selected = _secondary.Contains(m);
+                            <button type="button"
+                                    class="pill @(selected ? "pill-selected" : "")"
+                                    @onclick="() => ToggleSecondary(m)"
+                                    disabled="@IsReadOnly">
+                                @m
+                            </button>
+                        }
+                    </div>
+
+                    <div class="hint">You can select up to 2 secondary moods.</div>
+                </div>
+
+                <div class="form-block">
+                    <label class="label">Category (Optional)</label>
+                    <input class="input" placeholder="e.g., Personal, Work, Life" @bind="_category" disabled="@IsReadOnly" />
+                </div>
+
+                <div class="form-block">
+                    <label class="label">Tags (Optional)</label>
+
+                    <div class="pill-row">
+                        @foreach (var t in PrebuiltTags)
+                        {
+                            var sel = _tags.Contains(t);
+                            <button type="button"
+                                    class="pill @(sel ? "pill-selected" : "")"
+                                    @onclick="() => ToggleTag(t)"
+                                    disabled="@IsReadOnly">
+                                @t
+                            </button>
+                        }
+                    </div>
+
+                    <div class="form-block">
+                        <label class="label">Add Custom Tag</label>
+                        <div class="tag-add-row">
+                            <input class="input" placeholder="Enter custom tag" @bind="_customTag" disabled="@IsReadOnly" />
+                            <button type="button" class="btn-primary" @onclick="AddCustomTag" disabled="@IsReadOnly">Add</button>
+                        </div>
+                    </div>
+
+                    @if (_customTags.Count > 0)
                     {
-                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
+                        <div class="hint">Custom tags:</div>
+                        <div class="pill-row">
+                            @foreach (var t in _customTags)
+                            {
+                                var sel = _tags.Contains(t);
+                                <button type="button"
+                                        class="pill @(sel ? "pill-selected" : "")"
+                                        @onclick="() => ToggleTag(t)"
+                                        disabled="@IsReadOnly">
+                                    @t
+                                </button>
+                            }
+                        </div>
                     }
-                </MudChipSet>
+                </div>
 
-                <MudText Typo="Typo.caption" Class="mj-subsection mt-3">Neutral</MudText>
-                <MudChipSet T="string"
-                            SelectionMode="SelectionMode.SingleSelection"
-                            Class="mj-chips">
-                    @foreach (var m in NeutralMoods)
-                    {
-                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
-                    }
-                </MudChipSet>
-
-                <MudText Typo="Typo.caption" Class="mj-subsection mt-3">Negative</MudText>
-                <MudChipSet T="string"
-                            SelectionMode="SelectionMode.SingleSelection"
-                            Class="mj-chips">
-                    @foreach (var m in NegativeMoods)
-                    {
-                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
-                    }
-                </MudChipSet>
-            </div>
-
-            <!-- Secondary moods -->
-            <div class="mt-2">
-                <MudText Typo="Typo.subtitle1" Class="mj-section">Secondary Moods (Optional - Max 2)</MudText>
-
-                <MudChipSet T="string"
-                            SelectionMode="SelectionMode.MultiSelection"
-                            Class="mj-chips">
-
-                    @foreach (var m in AllMoods)
-                    {
-                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
-                    }
-                </MudChipSet>
-
-                @if (!string.IsNullOrWhiteSpace(_secondaryError))
+                @if (!string.IsNullOrWhiteSpace(_status))
                 {
-                    <MudText Typo="Typo.caption" Color="Color.Error">@_secondaryError</MudText>
+                    <div class="status">@_status</div>
                 }
             </div>
+        </div>
 
-            <!-- Title -->
-            <div>
-                <MudText Typo="Typo.subtitle1" Class="mj-section">Title (Optional)</MudText>
-                <MudTextField @bind-Value="_entryTitle"
-                              Label="Title"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense" />
+        <div class="today-right">
+            <div class="card summary-card">
+                <div class="summary-title">Entry Summary</div>
+                <div class="summary-sub">Quick overview of what will be saved.</div>
 
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-label">Date</div>
+                        <div class="summary-value">@DateTime.Today.ToString("ddd, MMM d, yyyy")</div>
+                    </div>
+
+                    <div class="summary-item">
+                        <div class="summary-label">Word Count</div>
+                        <div class="summary-value">@_wordCount</div>
+                    </div>
+
+                    <div class="summary-item">
+                        <div class="summary-label">Primary Mood</div>
+                        <div class="summary-value">@(!string.IsNullOrWhiteSpace(_primaryMood) ? _primaryMood : "Not selected")</div>
+                    </div>
+
+                    <div class="summary-item">
+                        <div class="summary-label">Secondary Moods</div>
+                        <div class="summary-value">@(_secondary.Count == 0 ? "None" : string.Join(", ", _secondary))</div>
+                    </div>
+
+                    <div class="summary-item">
+                        <div class="summary-label">Category</div>
+                        <div class="summary-value">@(!string.IsNullOrWhiteSpace(_category) ? _category : "None")</div>
+                    </div>
+
+                    <div class="summary-item">
+                        <div class="summary-label">Tags</div>
+                        <div class="summary-value">@(_tags.Count == 0 ? "None" : string.Join(", ", _tags))</div>
+                    </div>
+
+                    <div class="summary-item">
+                        <div class="summary-label">Status</div>
+                        <div class="summary-value">@(_mode == PageMode.View ? "Saved (Locked)" : "Editing")</div>
+                    </div>
+                </div>
+
+                <div class="summary-note">
+                    Required: Primary Mood and Content must be filled before saving.
+                </div>
             </div>
-            
-            <!-- Content of journal -->
-            <div>
-                <MudText Typo="Typo.subtitle1" Class="mj-section">Content *</MudText>
-                <MudTextField @bind-Value="_entryContent"
-                              Label="What stood out today?"
-                              Variant="Variant.Outlined"
-                              Lines="8" />
-            </div>
-            
-            <!-- Category -->
-            <div>
-                <MudText Typo="Typo.subtitle1" Class="mj-section">Category (Optional)</MudText>
-                <MudTextField @bind-Value="_entryCategory"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense" />
-            </div>
-            
-            <!-- Tags -->
-            <div>
-                <MudText Typo="Typo.subtitle1" Class="mj-section">Tags (Optional)</MudText>
-                <MudChipSet T="string"
-                            Class="mj-chips">
-                    @foreach (var m in Tags)
-                    {
-                        <MudChip T="string" Value="@m" Variant="Variant.Outlined" Class="mj-chip">@m</MudChip>
-                    }
-                </MudChipSet>
-                <MudTextField @bind-Value="_entryTags"
-                              Label="Custom Tags"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense" />
+        </div>
+    </div>
 
+    @if (_showDeleteDialog)
+    {
+        <div class="modal-backdrop">
+            <div class="modal-card">
+                <div class="modal-title">Delete entry?</div>
+                <div class="modal-text">
+                    This will permanently delete today's journal entry. This action cannot be undone.
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" @onclick="CloseDeleteDialog">Cancel</button>
+                    <button type="button" class="btn-danger" @onclick="ConfirmDelete">Delete</button>
+                </div>
             </div>
-            
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       Size="Size.Medium"
-                       Class="mj-save-btn"
-                       OnClick="SaveEntry"
-                       Disabled="@string.IsNullOrWhiteSpace(_primaryMood)">
-                Save Entry
-            </MudButton>
-
-        </MudStack>
-
-    </MudPaper>
+        </div>
+    }
 </div>
 
-@code
-{
-    // Date lbael
-    private readonly string _todayLabel = DateTime.Now.ToString("dddd, MMMM d, yyyy");
+@code {
+    private enum PageMode { Edit, View }
 
-    // Fields
-    private string _entryTitle = "";
-    private string _entryContent = "";
-    private string _entryCategory = "";
-    private string _entryTags = "";
+    private bool _quillReady;
+    private bool _initStarted;
 
-    //Moods
-    private string _primaryMood = ""; // required to submit or save entry or the button wont be clickable
-    private string? _secondaryError;
-    
-    private static readonly string[] PositiveMoods = { "Happy", "Excited", "Relaxed", "Grateful", "Confident" };
-    private static readonly string[] NeutralMoods  = { "Calm", "Thoughtful", "Curious", "Nostalgic", "Bored" };
-    private static readonly string[] NegativeMoods = { "Sad", "Angry", "Stressed", "Lonely", "Anxious" };
+    private PageMode _mode = PageMode.Edit;
+    private bool IsReadOnly => _mode == PageMode.View;
 
-    private static readonly string[] AllMoods =
-        PositiveMoods.Concat(NeutralMoods).Concat(NegativeMoods).ToArray();
-    
-    private static readonly string[] Tags = { "Work", "Studies", "Relationship", "Fitness", "Health", "Hobbies", "Travel", "Finance" };
-    
-    private void SaveEntry()
+    private bool _hasSavedEntry;
+
+    private string _title = "";
+    private string _primaryMood = "";
+    private readonly HashSet<string> _secondary = new();
+
+    private string _category = "";
+    private readonly HashSet<string> _tags = new();
+    private readonly List<string> _customTags = new();
+    private string _customTag = "";
+
+    private int _wordCount;
+    private string _status = "";
+
+    private string _contentHtmlCache = "";
+
+    private Snapshot? _backup;
+    private bool _showDeleteDialog;
+
+    private bool _canSave => !string.IsNullOrWhiteSpace(_primaryMood) && !IsReadOnly;
+
+    protected override async Task OnInitializedAsync()
     {
-        // adding this after milesone 1
+        await LoadTodayAsync();
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_quillReady || _initStarted) return;
+        _initStarted = true;
+
+        // init Quill once per navigation
+        await JS.InvokeVoidAsync("initQuill");
+        _quillReady = true;
+
+        // restore content
+        if (!string.IsNullOrWhiteSpace(_contentHtmlCache))
+            await JS.InvokeVoidAsync("setQuillContent", _contentHtmlCache);
+
+        await JS.InvokeVoidAsync("setQuillReadOnly", IsReadOnly);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // cache HTML so coming back doesn't show empty content
+        try
+        {
+            if (_quillReady)
+                _contentHtmlCache = await JS.InvokeAsync<string>("getQuillContent") ?? "";
+        }
+        catch { }
+
+        _quillReady = false;
+        _initStarted = false;
+    }
+
+    private async Task LoadTodayAsync()
+    {
+        var existing = await Repo.GetByDateAsync(DateTime.Today);
+
+        if (existing is null)
+        {
+            _hasSavedEntry = false;
+            _mode = PageMode.Edit;
+            ClearFields();
+            _backup = null;
+            return;
+        }
+
+        _hasSavedEntry = true;
+
+        _title = existing.Title ?? "";
+        _primaryMood = existing.PrimaryMood ?? "";
+        _category = existing.Category ?? "";
+        _wordCount = existing.WordCount;
+
+        _secondary.Clear();
+        if (!string.IsNullOrWhiteSpace(existing.SecondaryMood1)) _secondary.Add(existing.SecondaryMood1);
+        if (!string.IsNullOrWhiteSpace(existing.SecondaryMood2)) _secondary.Add(existing.SecondaryMood2);
+
+        _tags.Clear();
+        if (!string.IsNullOrWhiteSpace(existing.TagsCsv))
+        {
+            foreach (var t in existing.TagsCsv.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                _tags.Add(t.Trim());
+        }
+
+        _contentHtmlCache = existing.ContentHtml ?? "";
+
+        _mode = PageMode.View;
+        _backup = Snapshot.Capture(this);
+        _status = "";
+    }
+
+    private async Task SaveAsync()
+    {
+        var html = await JS.InvokeAsync<string>("getQuillContent");
+        var text = await JS.InvokeAsync<string>("getQuillText");
+
+        _contentHtmlCache = html ?? "";
+        _wordCount = CountWords(text);
+
+        if (string.IsNullOrWhiteSpace(_primaryMood))
+        {
+            _status = "Please select a primary mood.";
+            return;
+        }
+
+        if (_wordCount <= 0)
+        {
+            _status = "Please write something in the content box.";
+            return;
+        }
+
+        await Repo.SaveOrUpdateTodayAsync(
+            DateTime.Today,
+            _title,
+            _contentHtmlCache,
+            text,
+            _wordCount,
+            _primaryMood,
+            _secondary.ToList(),
+            _category,
+            _tags.ToList()
+        );
+
+        _hasSavedEntry = true;
+        _mode = PageMode.View;
+        _status = "Saved locally.";
+
+        _backup = Snapshot.Capture(this);
+
+        await JS.InvokeVoidAsync("setQuillReadOnly", true);
+        StateHasChanged();
+    }
+
+    private async Task BeginEdit()
+    {
+        _mode = PageMode.Edit;
+        _status = "";
+        _backup ??= Snapshot.Capture(this);
+
+        await JS.InvokeVoidAsync("setQuillReadOnly", false);
+    }
+
+    private async Task CancelEdit()
+    {
+        if (_backup is not null)
+        {
+            _backup.Restore(this);
+            await JS.InvokeVoidAsync("setQuillContent", _contentHtmlCache);
+        }
+
+        _mode = PageMode.View;
+        _status = "";
+
+        await JS.InvokeVoidAsync("setQuillReadOnly", true);
+        StateHasChanged();
+    }
+
+    private void OpenDeleteDialog() => _showDeleteDialog = true;
+    private void CloseDeleteDialog() => _showDeleteDialog = false;
+
+    private async Task ConfirmDelete()
+    {
+        _showDeleteDialog = false;
+
+        await Repo.DeleteByDateAsync(DateTime.Today);
+
+        _hasSavedEntry = false;
+        _mode = PageMode.Edit;
+        _backup = null;
+
+        ClearFields();
+        _status = "Entry deleted.";
+
+        await JS.InvokeVoidAsync("setQuillContent", "");
+        await JS.InvokeVoidAsync("setQuillReadOnly", false);
+
+        StateHasChanged();
+    }
+
+    private void ClearFields()
+    {
+        _title = "";
+        _primaryMood = "";
+        _secondary.Clear();
+        _category = "";
+        _tags.Clear();
+        _customTags.Clear();
+        _customTag = "";
+        _wordCount = 0;
+        _contentHtmlCache = "";
+        _status = "";
+    }
+
+    private void SetPrimaryMood(string mood)
+    {
+        _primaryMood = mood;
+        _status = "";
+    }
+
+    private void ToggleSecondary(string mood)
+    {
+        if (IsReadOnly) return;
+
+        if (_secondary.Contains(mood))
+        {
+            _secondary.Remove(mood);
+            return;
+        }
+
+        if (_secondary.Count >= 2) return;
+        _secondary.Add(mood);
+    }
+
+    private void ToggleTag(string tag)
+    {
+        if (IsReadOnly) return;
+
+        if (_tags.Contains(tag)) _tags.Remove(tag);
+        else _tags.Add(tag);
+    }
+
+    private void AddCustomTag()
+    {
+        if (IsReadOnly) return;
+
+        var t = (_customTag ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(t)) return;
+
+        if (PrebuiltTags.Any(x => x.Equals(t, StringComparison.OrdinalIgnoreCase)) ||
+            _customTags.Any(x => x.Equals(t, StringComparison.OrdinalIgnoreCase)))
+        {
+            _customTag = "";
+            return;
+        }
+
+        _customTags.Add(t);
+        _tags.Add(t);
+        _customTag = "";
+    }
+
+    private static int CountWords(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return 0;
+        var parts = text.Trim().Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length;
+    }
+
+    private sealed class Snapshot
+    {
+        public string Title { get; init; } = "";
+        public string PrimaryMood { get; init; } = "";
+        public List<string> Secondary { get; init; } = new();
+        public string Category { get; init; } = "";
+        public List<string> Tags { get; init; } = new();
+        public string ContentHtml { get; init; } = "";
+        public int WordCount { get; init; }
+
+        public static Snapshot Capture(Today self)
+        {
+            return new Snapshot
+            {
+                Title = self._title,
+                PrimaryMood = self._primaryMood,
+                Secondary = self._secondary.ToList(),
+                Category = self._category,
+                Tags = self._tags.ToList(),
+                ContentHtml = self._contentHtmlCache,
+                WordCount = self._wordCount
+            };
+        }
+
+        public void Restore(Today self)
+        {
+            self._title = Title;
+            self._primaryMood = PrimaryMood;
+
+            self._secondary.Clear();
+            foreach (var m in Secondary) self._secondary.Add(m);
+
+            self._category = Category;
+
+            self._tags.Clear();
+            foreach (var t in Tags) self._tags.Add(t);
+
+            self._contentHtmlCache = ContentHtml;
+            self._wordCount = WordCount;
+        }
+    }
+
+    private static readonly List<string> PositiveMoods = new()
+    {
+        "Happy","Excited","Relaxed","Grateful","Confident"
+    };
+
+    private static readonly List<string> NeutralMoods = new()
+    {
+        "Calm","Thoughtful","Curious","Nostalgic","Bored"
+    };
+
+    private static readonly List<string> NegativeMoods = new()
+    {
+        "Sad","Angry","Stressed","Lonely","Anxious"
+    };
+
+    private static readonly List<string> AllMoods =
+        PositiveMoods.Concat(NeutralMoods).Concat(NegativeMoods).ToList();
+
+    private static readonly List<string> PrebuiltTags = new()
+    {
+        "Work","Career","Studies","Family","Friends","Relationships","Health","Fitness","Personal Growth",
+        "Self-care","Hobbies","Travel","Nature","Finance","Spirituality",
+        "Birthday","Holiday","Vacation","Celebration",
+        "Exercise","Reading","Writing","Cooking","Meditation","Yoga","Music","Shopping","Parenting",
+        "Projects","Planning","Reflection"
+    };
 }

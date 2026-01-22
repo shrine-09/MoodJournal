@@ -1,8 +1,14 @@
-﻿<Router AppAssembly="@typeof(MauiProgram).Assembly">
+﻿<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)"/>
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MoodJournal.Components.Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
-        <MudText>Page not found</MudText>
+        <LayoutView Layout="@typeof(MoodJournal.Components.Layout.MainLayout)">
+            <div class="card">
+                <h2 style="margin:0 0 8px 0;">Page not found</h2>
+                <p style="margin:0;color:var(--muted);">That route doesn’t exist.</p>
+            </div>
+        </LayoutView>
     </NotFound>
 </Router>

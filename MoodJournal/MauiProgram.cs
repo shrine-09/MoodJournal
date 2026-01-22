@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
-using MudBlazor.Services;
+using Microsoft.Maui.Controls.Hosting;
+using Microsoft.Maui.Hosting;
+using MoodJournal.Services;
 
 namespace MoodJournal;
 
@@ -8,9 +10,14 @@ public static class MauiProgram
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
+
         builder
             .UseMauiApp<App>()
-            .ConfigureFonts(fonts => { fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"); });
+            .ConfigureFonts(fonts =>
+            {
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+            });
 
         builder.Services.AddMauiBlazorWebView();
 
@@ -18,10 +25,9 @@ public static class MauiProgram
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 #endif
-        builder.Services.AddMudServices(config =>
-        {
-            config.SnackbarConfiguration.PositionClass = MudBlazor.Defaults.Classes.Position.BottomRight;
-        });
+
+        builder.Services.AddScoped<ThemeService>();
+        builder.Services.AddSingleton<JournalRepository>(); // local SQLite repo
 
         return builder.Build();
     }

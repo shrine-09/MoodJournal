@@ -1,0 +1,88 @@
+.journal-list{
+    display: grid;
+    gap: 16px;
+}
+
+.journal-card{
+    padding: 18px;
+}
+
+.journal-head{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.journal-title{
+    font-weight: 900;
+    font-size: 16px;
+}
+
+.journal-meta{
+    color: var(--muted);
+    font-weight: 800;
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.journal-badges{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.badge{
+    display:inline-flex;
+    align-items:center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    background: rgba(109,40,217,0.12);
+    color: var(--text);
+}
+
+.badge-soft{
+    background: rgba(100,116,139,0.08);
+}
+
+.journal-line{
+    margin-top: 8px;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.journal-label{
+    color: var(--muted);
+    font-weight: 900;
+    margin-right: 6px;
+}
+
+.journal-content{
+    margin-top: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: rgba(100,116,139,0.05);
+}
+
+/*QuillHTML rendering*/
+.journal-content h1,
+.journal-content h2{
+    margin: 10px 0;
+}
+
+.journal-content p{
+    margin: 8px 0;
+    color: var(--text);
+}
+
+.journal-content ul,
+.journal-content ol{
+    margin: 8px 0 8px 22px;
+}

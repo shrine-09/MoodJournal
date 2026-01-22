@@ -1,0 +1,93 @@
+@page "/journal"
+@inject MoodJournal.Services.JournalRepository Repo
+@using MoodJournal.Models
+@using Microsoft.AspNetCore.Components
+
+<div class="journal-page">
+    <div class="page-head">
+        <div>
+            <h1 class="h1">Journal</h1>
+            <div class="subtle">All past entries (latest first).</div>
+        </div>
+    </div>
+
+    <div class="journal-list">
+        @if (_entries.Count == 0)
+        {
+            <div class="card">
+                No entries yet. Go to Today and save your first entry.
+            </div>
+        }
+        else
+        {
+            @foreach (var e in _entries)
+            {
+                <div class="card journal-card">
+                    <div class="journal-head">
+                        <div>
+                            <div class="journal-title">
+                                @FormatDate(e.EntryDate)
+                                @if (!string.IsNullOrWhiteSpace(e.Title))
+                                {
+                                    <span> — @e.Title</span>
+                                }
+                            </div>
+                            <div class="journal-meta">
+                                @e.WordCount words • Created @e.CreatedAt.ToString("g") • Updated @e.UpdatedAt.ToString("g")
+                            </div>
+                        </div>
+
+                        <div class="journal-badges">
+                            @if (!string.IsNullOrWhiteSpace(e.PrimaryMood))
+                            {
+                                <span class="badge">@e.PrimaryMood</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(e.SecondaryMood1))
+                            {
+                                <span class="badge badge-soft">@e.SecondaryMood1</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(e.SecondaryMood2))
+                            {
+                                <span class="badge badge-soft">@e.SecondaryMood2</span>
+                            }
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(e.Category))
+                    {
+                        <div class="journal-line">
+                            <span class="journal-label">Category:</span> @e.Category
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(e.TagsCsv))
+                    {
+                        <div class="journal-line">
+                            <span class="journal-label">Tags:</span> @e.TagsCsv
+                        </div>
+                    }
+
+                    <div class="journal-content">
+                        @((MarkupString)(e.ContentHtml ?? ""))
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private List<JournalEntry> _entries = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _entries = await Repo.GetAllAsync();
+    }
+
+    private static string FormatDate(string entryDate)
+    {
+        if (DateTime.TryParse(entryDate, out var dt))
+            return dt.ToString("ddd, MMM d, yyyy");
+        return entryDate;
+    }
+}
