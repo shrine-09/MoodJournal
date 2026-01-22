@@ -282,7 +282,7 @@
         await JS.InvokeVoidAsync("initQuill");
         _quillReady = true;
 
-        // restore content
+        //restore content
         if (!string.IsNullOrWhiteSpace(_contentHtmlCache))
             await JS.InvokeVoidAsync("setQuillContent", _contentHtmlCache);
 

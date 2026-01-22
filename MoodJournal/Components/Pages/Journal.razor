@@ -190,13 +190,12 @@
 </div>
 
 @code {
-    // Data
     private List<JournalEntry> AllEntries = new();
 
-    // UI state
+    //UI state
     private bool ShowFilters = true;
 
-    // Draft inputs (user edits these)
+    //draft inputs 
     private string SearchDraft = "";
     private string DateFromDraft = "";
     private string DateToDraft = "";
@@ -204,18 +203,17 @@
     private string TagDraft = "";
     private string CustomTagDraft = "";
 
-    // Applied filters (used to compute results)
+    //applied filters
     private string SearchApplied = "";
     private DateTime? DateFromApplied = null;
     private DateTime? DateToApplied = null;
     private string MoodApplied = "";
     private string TagApplied = "";
 
-    // Pagination
+    //pagination
     private int PageSize = 10;
     private int CurrentPage = 1;
-
-    // Lookups
+    
     private static readonly string[] AllMoods =
     {
         "Happy","Excited","Relaxed","Grateful","Confident",
@@ -238,7 +236,6 @@
         ApplyAll();
     }
 
-    // ----- Apply / Clear -----
     private void ApplyAll()
     {
         SearchApplied = (SearchDraft ?? "").Trim();
@@ -248,7 +245,7 @@
 
         MoodApplied = (MoodDraft ?? "").Trim();
 
-        // Custom tag overrides prebuilt tag
+        //custom tag overrides prebuilt tag
         var custom = (CustomTagDraft ?? "").Trim();
         TagApplied = !string.IsNullOrWhiteSpace(custom)
             ? custom
@@ -351,7 +348,7 @@
             var start = Math.Max(1, CurrentPage - 2);
             var end = Math.Min(TotalPages, start + 4);
 
-            // shift back if we’re near the end
+            //to shift back if near the end
             start = Math.Max(1, end - 4);
 
             for (var i = start; i <= end; i++)
@@ -385,7 +382,7 @@
         }
     }
 
-    // ----- UI handlers (draft only) -----
+    //UI handling functins
     private void ToggleFilters() => ShowFilters = !ShowFilters;
 
     private void OnSearchDraftInput(ChangeEventArgs e) => SearchDraft = e.Value?.ToString() ?? "";
@@ -409,7 +406,7 @@
             TagDraft = "";
     }
 
-    // ----- Helpers -----
+    //Helpers
     private static DateTime ParseEntryDate(string entryDate) =>
         DateTime.ParseExact(entryDate, "yyyy-MM-dd", CultureInfo.InvariantCulture);
 

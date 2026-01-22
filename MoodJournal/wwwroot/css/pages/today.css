@@ -64,7 +64,7 @@
     border-top: 1px solid var(--border);
 }
 
-/* Small layout helpers */
+/*small layout helpers*/
 .entry-top{
     display:flex;
     align-items:flex-start;
@@ -141,7 +141,6 @@
     opacity: 0.92;
 }
 
-/* Modal */
 .modal-backdrop{
     position: fixed;
     inset: 0;
