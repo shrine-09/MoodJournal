@@ -30,3 +30,20 @@ a:hover {
 .hidden {
     display: none !important;
 }
+
+/* GLOBAL fix for ALL date inputs */
+input[type="date"] {
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding-right: 36px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    margin: 0;
+}

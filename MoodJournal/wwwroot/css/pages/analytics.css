@@ -1,0 +1,79 @@
+.analytics-page{
+    padding: 18px 18px 40px 18px;
+    max-width: 1100px;
+}
+
+.analytics-toolbar{
+    padding: 14px;
+    margin-top: 16px;
+}
+
+.analytics-toolbar-row{
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.analytics-range{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: end;
+
+    /*controls how long the whole date area is*/
+    max-width: 520px;
+    width: 100%;
+    
+    min-width: 0;
+}
+
+.analytics-range .mj-input{
+    width: 100%;
+    max-width: 250px;
+    min-width: 0;
+}
+
+.analytics-actions{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.mj-input[type="date"],
+.mj-date{
+    display: block;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 36px; /* room for icon */
+    box-sizing: border-box;
+}
+
+.mj-input[type="date"]::-webkit-calendar-picker-indicator{
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.analytics-toolbar,
+.analytics-range,
+.field{
+    min-width: 0;
+}
+
+@media (max-width: 700px){
+    .analytics-range{
+        grid-template-columns: 1fr;
+        max-width: 100%;
+    }
+
+    .analytics-range .mj-input{
+        max-width: 100%;
+    }
+}
