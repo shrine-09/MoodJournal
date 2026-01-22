@@ -1,74 +1,187 @@
 @page "/journal"
-@inject MoodJournal.Services.JournalRepository Repo
+@using System.Globalization
 @using MoodJournal.Models
-@using Microsoft.AspNetCore.Components
+@using MoodJournal.Services
+@inject JournalRepository Repo
 
-<div class="journal-page">
-    <div class="page-head">
-        <div>
-            <h1 class="h1">Journal</h1>
-            <div class="subtle">All past entries (latest first).</div>
-        </div>
+<div class="mj-page">
+    <div class="mj-page-header">
+        <h1 class="mj-title">Journal</h1>
+        <div class="mj-subtitle">Search and filter your entries.</div>
     </div>
 
-    <div class="journal-list">
-        @if (_entries.Count == 0)
+    <!-- Search + Filter -->
+    <div class="mj-card mj-search-card">
+        <div class="mj-search-row">
+            <input class="mj-input mj-search"
+                   placeholder="Search title or content..."
+                   value="@SearchDraft"
+                   @oninput="OnSearchDraftInput" />
+
+            <button class="mj-btn mj-btn-outline" type="button" @onclick="ToggleFilters">
+                @(ShowFilters ? "Hide Filters" : "Filters")
+            </button>
+
+            <button class="mj-btn" type="button" @onclick="ApplyAll">
+                Apply
+            </button>
+
+            <button class="mj-btn mj-btn-ghost" type="button" @onclick="ClearAll">
+                Clear
+            </button>
+        </div>
+
+        @if (ShowFilters)
         {
-            <div class="card">
-                No entries yet. Go to Today and save your first entry.
+            <div class="mj-filter-grid">
+                <!-- Date filter -->
+                <div class="mj-filter-box">
+                    <div class="mj-filter-title">Date</div>
+                    <div class="mj-field">
+                        <label class="mj-label">From (optional)</label>
+                        <input class="mj-input mj-input-sm mj-date"
+                               type="date"
+                               value="@DateFromDraft"
+                               @onchange="OnDateFromChanged" />
+                    </div>
+                    <div class="mj-field">
+                        <label class="mj-label">To (optional)</label>
+                        <input class="mj-input mj-input-sm mj-date"
+                               type="date"
+                               value="@DateToDraft"
+                               @onchange="OnDateToChanged" />
+                    </div>
+                </div>
+
+                <!-- Mood filter -->
+                <div class="mj-filter-box">
+                    <div class="mj-filter-title">Mood</div>
+                    <div class="mj-field">
+                        <label class="mj-label">Primary mood</label>
+                        <select class="mj-input mj-input-sm"
+                                value="@MoodDraft"
+                                @onchange="OnMoodDraftChanged">
+                            <option value="">Any</option>
+                            @foreach (var m in AllMoods)
+                            {
+                                <option value="@m">@m</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tag filter -->
+                <div class="mj-filter-box">
+                    <div class="mj-filter-title">Tags</div>
+
+                    <div class="mj-tag-pills">
+                        @foreach (var t in PrebuiltTags)
+                        {
+                            var active = string.Equals(TagDraft, t, StringComparison.OrdinalIgnoreCase);
+                            <button type="button"
+                                    class="mj-pill @(active ? "is-active" : "")"
+                                    @onclick="() => SetTagDraft(t)">
+                                @t
+                            </button>
+                        }
+                    </div>
+
+                    <div class="mj-field">
+                        <label class="mj-label">Custom tag</label>
+                        <input class="mj-input mj-input-sm"
+                               placeholder="Type a tag (optional)"
+                               value="@CustomTagDraft"
+                               @oninput="OnCustomTagDraftInput" />
+                        <div class="mj-hint">If provided, custom tag overrides selected prebuilt tag.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mj-active-line">
+                <span class="mj-active-label">Active:</span>
+                <span class="mj-active-value">@ActiveFiltersLabel</span>
+            </div>
+        }
+    </div>
+
+    <!-- Entries + Pagination (TOP ONLY, no First/Last) -->
+    <div class="mj-section">
+        <div class="mj-section-header">
+            <div>
+                <h2 class="mj-h2">Entries</h2>
+                <div class="mj-muted">@TotalResults results</div>
+                <div class="mj-muted">@RangeLabel</div>
+            </div>
+
+            <div class="mj-pager-right">
+                <div class="mj-perpage">
+                    <span class="mj-muted">Per page</span>
+                    <select class="mj-input mj-input-sm"
+                            value="@PageSize"
+                            @onchange="PageSizeChanged">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+
+                <div class="mj-pager">
+                    <button class="mj-btn mj-btn-outline"
+                            type="button"
+                            @onclick="PrevPage"
+                            disabled="@IsFirstPage">
+                        Prev
+                    </button>
+
+                    @foreach (var p in PageButtons)
+                    {
+                        <button type="button"
+                                class="mj-pagebtn @(p == CurrentPage ? "is-active" : "")"
+                                @onclick="() => GoToPage(p)">
+                            @p
+                        </button>
+                    }
+
+                    <button class="mj-btn mj-btn-outline"
+                            type="button"
+                            @onclick="NextPage"
+                            disabled="@IsLastPage">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @if (PagedEntries.Count == 0)
+        {
+            <div class="mj-card">
+                <div class="mj-muted">No entries match your search/filter.</div>
             </div>
         }
         else
         {
-            @foreach (var e in _entries)
+            @foreach (var e in PagedEntries)
             {
-                <div class="card journal-card">
-                    <div class="journal-head">
-                        <div>
-                            <div class="journal-title">
-                                @FormatDate(e.EntryDate)
-                                @if (!string.IsNullOrWhiteSpace(e.Title))
-                                {
-                                    <span> — @e.Title</span>
-                                }
-                            </div>
-                            <div class="journal-meta">
-                                @e.WordCount words • Created @e.CreatedAt.ToString("g") • Updated @e.UpdatedAt.ToString("g")
-                            </div>
-                        </div>
-
-                        <div class="journal-badges">
-                            @if (!string.IsNullOrWhiteSpace(e.PrimaryMood))
-                            {
-                                <span class="badge">@e.PrimaryMood</span>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(e.SecondaryMood1))
-                            {
-                                <span class="badge badge-soft">@e.SecondaryMood1</span>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(e.SecondaryMood2))
-                            {
-                                <span class="badge badge-soft">@e.SecondaryMood2</span>
-                            }
-                        </div>
+                <div class="mj-card mj-entry">
+                    <div class="mj-entry-top">
+                        <div class="mj-entry-date">@FormatEntryDate(e.EntryDate)</div>
+                        <div class="mj-pill mj-pill-mood">@e.PrimaryMood</div>
                     </div>
 
-                    @if (!string.IsNullOrWhiteSpace(e.Category))
+                    @if (!string.IsNullOrWhiteSpace(e.Title))
                     {
-                        <div class="journal-line">
-                            <span class="journal-label">Category:</span> @e.Category
-                        </div>
+                        <div class="mj-entry-title">@e.Title</div>
                     }
 
-                    @if (!string.IsNullOrWhiteSpace(e.TagsCsv))
-                    {
-                        <div class="journal-line">
-                            <span class="journal-label">Tags:</span> @e.TagsCsv
-                        </div>
-                    }
+                    <div class="mj-entry-tags">
+                        @foreach (var tag in SplitTags(e.TagsCsv))
+                        {
+                            <span class="mj-tag">@tag</span>
+                        }
+                    </div>
 
-                    <div class="journal-content">
-                        @((MarkupString)(e.ContentHtml ?? ""))
+                    <div class="mj-entry-content">
+                        @(!string.IsNullOrWhiteSpace(e.ContentText) ? e.ContentText : "No content.")
                     </div>
                 </div>
             }
@@ -77,17 +190,258 @@
 </div>
 
 @code {
-    private List<JournalEntry> _entries = new();
+    // Data
+    private List<JournalEntry> AllEntries = new();
+
+    // UI state
+    private bool ShowFilters = true;
+
+    // Draft inputs (user edits these)
+    private string SearchDraft = "";
+    private string DateFromDraft = "";
+    private string DateToDraft = "";
+    private string MoodDraft = "";
+    private string TagDraft = "";
+    private string CustomTagDraft = "";
+
+    // Applied filters (used to compute results)
+    private string SearchApplied = "";
+    private DateTime? DateFromApplied = null;
+    private DateTime? DateToApplied = null;
+    private string MoodApplied = "";
+    private string TagApplied = "";
+
+    // Pagination
+    private int PageSize = 10;
+    private int CurrentPage = 1;
+
+    // Lookups
+    private static readonly string[] AllMoods =
+    {
+        "Happy","Excited","Relaxed","Grateful","Confident",
+        "Calm","Thoughtful","Curious","Nostalgic","Bored",
+        "Sad","Angry","Stressed","Lonely","Anxious"
+    };
+
+    private static readonly string[] PrebuiltTags =
+    {
+        "Work","Career","Studies","Family","Friends","Relationships",
+        "Health","Fitness","Personal Growth","Self-care","Hobbies","Travel",
+        "Nature","Finance","Spirituality","Birthday","Holiday","Vacation","Celebration",
+        "Exercise","Reading","Writing","Cooking","Meditation","Yoga","Music",
+        "Shopping","Parenting","Projects","Planning","Reflection"
+    };
 
     protected override async Task OnInitializedAsync()
     {
-        _entries = await Repo.GetAllAsync();
+        AllEntries = await Repo.GetAllAsync();
+        ApplyAll();
     }
 
-    private static string FormatDate(string entryDate)
+    // ----- Apply / Clear -----
+    private void ApplyAll()
     {
-        if (DateTime.TryParse(entryDate, out var dt))
-            return dt.ToString("ddd, MMM d, yyyy");
-        return entryDate;
+        SearchApplied = (SearchDraft ?? "").Trim();
+
+        DateFromApplied = TryParseDate(DateFromDraft);
+        DateToApplied = TryParseDate(DateToDraft);
+
+        MoodApplied = (MoodDraft ?? "").Trim();
+
+        // Custom tag overrides prebuilt tag
+        var custom = (CustomTagDraft ?? "").Trim();
+        TagApplied = !string.IsNullOrWhiteSpace(custom)
+            ? custom
+            : (TagDraft ?? "").Trim();
+
+        CurrentPage = 1;
+        StateHasChanged();
+    }
+
+    private void ClearAll()
+    {
+        SearchDraft = "";
+        DateFromDraft = "";
+        DateToDraft = "";
+        MoodDraft = "";
+        TagDraft = "";
+        CustomTagDraft = "";
+
+        SearchApplied = "";
+        DateFromApplied = null;
+        DateToApplied = null;
+        MoodApplied = "";
+        TagApplied = "";
+
+        CurrentPage = 1;
+        StateHasChanged();
+    }
+
+    // ----- Filtering + paging -----
+    private List<JournalEntry> FilteredEntries
+    {
+        get
+        {
+            IEnumerable<JournalEntry> q = AllEntries;
+
+            // Search
+            if (!string.IsNullOrWhiteSpace(SearchApplied))
+            {
+                var s = SearchApplied.ToLowerInvariant();
+                q = q.Where(e =>
+                    (e.Title ?? "").ToLowerInvariant().Contains(s) ||
+                    (e.ContentText ?? "").ToLowerInvariant().Contains(s));
+            }
+
+            // Date range
+            if (DateFromApplied is not null)
+                q = q.Where(e => ParseEntryDate(e.EntryDate) >= DateFromApplied.Value.Date);
+
+            if (DateToApplied is not null)
+                q = q.Where(e => ParseEntryDate(e.EntryDate) <= DateToApplied.Value.Date);
+
+            // Mood
+            if (!string.IsNullOrWhiteSpace(MoodApplied))
+                q = q.Where(e => string.Equals(e.PrimaryMood, MoodApplied, StringComparison.OrdinalIgnoreCase));
+
+            // Tag
+            if (!string.IsNullOrWhiteSpace(TagApplied))
+            {
+                var t = TagApplied.ToLowerInvariant();
+                q = q.Where(e => SplitTags(e.TagsCsv).Any(x => x.ToLowerInvariant() == t));
+            }
+
+            return q
+                .OrderByDescending(e => e.EntryDate)
+                .ToList();
+        }
+    }
+
+    private int TotalResults => FilteredEntries.Count;
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalResults / (double)PageSize));
+
+    private bool IsFirstPage => CurrentPage <= 1;
+    private bool IsLastPage => CurrentPage >= TotalPages;
+
+    private List<JournalEntry> PagedEntries =>
+        FilteredEntries
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+    private string RangeLabel
+    {
+        get
+        {
+            if (TotalResults == 0) return "Showing 0 of 0";
+            var start = ((CurrentPage - 1) * PageSize) + 1;
+            var end = Math.Min(CurrentPage * PageSize, TotalResults);
+            return $"Showing {start}-{end} of {TotalResults}";
+        }
+    }
+
+    private List<int> PageButtons
+    {
+        get
+        {
+            var pages = new List<int>();
+            if (TotalPages <= 1) return new List<int> { 1 };
+
+            var start = Math.Max(1, CurrentPage - 2);
+            var end = Math.Min(TotalPages, start + 4);
+
+            // shift back if we’re near the end
+            start = Math.Max(1, end - 4);
+
+            for (var i = start; i <= end; i++)
+                pages.Add(i);
+
+            return pages;
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (!IsFirstPage) CurrentPage--;
+    }
+
+    private void NextPage()
+    {
+        if (!IsLastPage) CurrentPage++;
+    }
+
+    private void GoToPage(int p)
+    {
+        CurrentPage = Math.Clamp(p, 1, TotalPages);
+    }
+
+    private void PageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var ps) && ps > 0)
+        {
+            PageSize = ps;
+            CurrentPage = 1;
+        }
+    }
+
+    // ----- UI handlers (draft only) -----
+    private void ToggleFilters() => ShowFilters = !ShowFilters;
+
+    private void OnSearchDraftInput(ChangeEventArgs e) => SearchDraft = e.Value?.ToString() ?? "";
+
+    private void OnDateFromChanged(ChangeEventArgs e) => DateFromDraft = e.Value?.ToString() ?? "";
+    private void OnDateToChanged(ChangeEventArgs e) => DateToDraft = e.Value?.ToString() ?? "";
+
+    private void OnMoodDraftChanged(ChangeEventArgs e) => MoodDraft = e.Value?.ToString() ?? "";
+
+    private void SetTagDraft(string t)
+    {
+        TagDraft = t;
+        if (!string.IsNullOrWhiteSpace(CustomTagDraft))
+            CustomTagDraft = "";
+    }
+
+    private void OnCustomTagDraftInput(ChangeEventArgs e)
+    {
+        CustomTagDraft = e.Value?.ToString() ?? "";
+        if (!string.IsNullOrWhiteSpace(CustomTagDraft))
+            TagDraft = "";
+    }
+
+    // ----- Helpers -----
+    private static DateTime ParseEntryDate(string entryDate) =>
+        DateTime.ParseExact(entryDate, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static DateTime? TryParseDate(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        if (DateTime.TryParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+            return dt.Date;
+        return null;
+    }
+
+    private static string FormatEntryDate(string entryDate) =>
+        ParseEntryDate(entryDate).ToString("ddd, MMM dd, yyyy", CultureInfo.InvariantCulture);
+
+    private static IEnumerable<string> SplitTags(string? csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) return Array.Empty<string>();
+        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+
+    private string ActiveFiltersLabel
+    {
+        get
+        {
+            var parts = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(SearchApplied)) parts.Add("Search");
+            if (DateFromApplied is not null || DateToApplied is not null) parts.Add("Date");
+            if (!string.IsNullOrWhiteSpace(MoodApplied)) parts.Add("Mood");
+            if (!string.IsNullOrWhiteSpace(TagApplied)) parts.Add("Tag");
+
+            return parts.Count == 0 ? "None" : string.Join(", ", parts);
+        }
     }
 }
