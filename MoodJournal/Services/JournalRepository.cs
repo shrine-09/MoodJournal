@@ -12,7 +12,7 @@ public class JournalRepository
         var dbPath = Path.Combine(FileSystem.AppDataDirectory, "moodjournal.db");
         _db = new SQLiteAsyncConnection(dbPath);
 
-        // Ensure table exists
+        //checks if table exists
         _ = _db.CreateTableAsync<JournalEntry>();
     }
 

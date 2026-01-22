@@ -278,7 +278,7 @@
         if (_quillReady || _initStarted) return;
         _initStarted = true;
 
-        // init Quill once per navigation
+        //initilize Quill once per navigation
         await JS.InvokeVoidAsync("initQuill");
         _quillReady = true;
 
@@ -291,7 +291,7 @@
 
     public async ValueTask DisposeAsync()
     {
-        // cache HTML so coming back doesn't show empty content
+        //this makes it so that coming back form other page doesnot show blank page
         try
         {
             if (_quillReady)

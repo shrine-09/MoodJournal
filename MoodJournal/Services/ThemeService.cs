@@ -5,7 +5,7 @@ namespace MoodJournal.Services;
 
 public sealed class ThemeService
 {
-    private const string Key = "moodjournal_theme"; // "light" or "dark"
+    private const string Key = "moodjournal_theme"; // light or dark
     private readonly IJSRuntime _js;
 
     public bool IsDark { get; private set; }
