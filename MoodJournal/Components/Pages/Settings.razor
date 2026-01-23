@@ -1,1 +1,171 @@
-@page "/Settings"
+@page "/settings"
+@using MoodJournal.Services
+@inject PinService Pin
+@inject AppLockState LockState
+
+<div class="settings-page">
+    <h1 class="h1">Settings</h1>
+    <div class="subtle">Security and preferences.</div>
+
+    <div class="card settings-card">
+        <h2 class="h2">PIN Lock</h2>
+
+        @if (!Pin.IsEnabled)
+        {
+            <div class="subtle">PIN lock is currently disabled.</div>
+
+            <div class="field">
+                <label class="label">New PIN</label>
+                <input class="mj-input" type="password" maxlength="6" inputmode="numeric" @bind="NewPin" />
+            </div>
+
+            <div class="field">
+                <label class="label">Confirm PIN</label>
+                <input class="mj-input" type="password" maxlength="6" inputmode="numeric" @bind="ConfirmPin" />
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <div class="settings-msg">@Message</div>
+            }
+
+            <button class="btn" @onclick="EnablePin">Enable PIN</button>
+        }
+        else
+        {
+            <div class="subtle">PIN lock is enabled.</div>
+
+            <div class="field">
+                <label class="label">Current PIN</label>
+                <input class="mj-input" type="password" maxlength="6" inputmode="numeric" @bind="CurrentPin" />
+            </div>
+
+            <div class="settings-actions">
+                <button class="btn btn-ghost" @onclick="DisablePin">Disable PIN</button>
+                <button class="btn" type="button" @onclick="() => ShowChange = !ShowChange">
+                    @(ShowChange ? "Cancel" : "Change PIN")
+                </button>
+
+            </div>
+
+            @if (ShowChange)
+            {
+                <div class="settings-change">
+                    <div class="field">
+                        <label class="label">New PIN</label>
+                        <input class="mj-input" type="password" maxlength="6" inputmode="numeric" @bind="NewPin" />
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Confirm New PIN</label>
+                        <input class="mj-input" type="password" maxlength="6" inputmode="numeric" @bind="ConfirmPin" />
+                    </div>
+
+                    <button class="btn" @onclick="ChangePin">Save New PIN</button>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <div class="settings-msg">@Message</div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private string CurrentPin = "";
+    private string NewPin = "";
+    private string ConfirmPin = "";
+    private bool ShowChange = false;
+    private string Message = "";
+
+    private void EnablePin()
+    {
+        Message = "";
+
+        if (!IsValidPin(NewPin))
+        {
+            Message = "PIN must be 4 to 6 digits.";
+            return;
+        }
+
+        if (NewPin != ConfirmPin)
+        {
+            Message = "PIN confirmation does not match.";
+            return;
+        }
+
+        Pin.EnableWithPin(NewPin);
+
+        // Lock immediately after enabling, so next open requires PIN
+        LockState.SetUnlocked(false);
+
+        CurrentPin = "";
+        NewPin = "";
+        ConfirmPin = "";
+        ShowChange = false;
+
+        Message = "PIN enabled.";
+    }
+
+    private void DisablePin()
+    {
+        Message = "";
+
+        if (!Pin.Verify(CurrentPin))
+        {
+            Message = "Incorrect current PIN.";
+            return;
+        }
+
+        Pin.Disable();
+        LockState.SetUnlocked(true);
+
+        CurrentPin = "";
+        NewPin = "";
+        ConfirmPin = "";
+        ShowChange = false;
+
+        Message = "PIN disabled.";
+    }
+
+    private void ChangePin()
+    {
+        Message = "";
+
+        if (!Pin.Verify(CurrentPin))
+        {
+            Message = "Incorrect current PIN.";
+            return;
+        }
+
+        if (!IsValidPin(NewPin))
+        {
+            Message = "New PIN must be 4 to 6 digits.";
+            return;
+        }
+
+        if (NewPin != ConfirmPin)
+        {
+            Message = "New PIN confirmation does not match.";
+            return;
+        }
+
+        Pin.ChangePin(CurrentPin, NewPin);
+
+        CurrentPin = "";
+        NewPin = "";
+        ConfirmPin = "";
+        ShowChange = false;
+
+        Message = "PIN updated.";
+    }
+
+    private static bool IsValidPin(string pin)
+    {
+        if (string.IsNullOrWhiteSpace(pin)) return false;
+        if (pin.Length < 4 || pin.Length > 6) return false;
+        return pin.All(char.IsDigit);
+    }
+}

@@ -1,66 +1,47 @@
 (function () {
-    const store = (window.mjCharts = window.mjCharts || {});
+    window.mjCharts = window.mjCharts || {};
 
-    function getCanvas(id) {
-        const el = document.getElementById(id);
-        if (!el) return null;
-        return el.getContext("2d");
-    }
-
-    function ensureChart(id, config) {
-        const ctx = getCanvas(id);
-        if (!ctx) return;
-
-        if (store[id]) {
-            store[id].data.labels = config.data.labels;
-            store[id].data.datasets = config.data.datasets;
-            store[id].options = config.options || store[id].options;
-            store[id].update();
-            return;
-        }
-
-        store[id] = new Chart(ctx, config);
-    }
-
-    window.mjChartsInitOrUpdate = function (chartId, chartType, labels, data, label, optionsJson) {
-        const options = optionsJson ? JSON.parse(optionsJson) : {};
-
-        const config = {
-            type: chartType,
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: label || "",
-                        data: data,
-                        borderWidth: 1,
-                        tension: 0.25
-                    }
-                ]
-            },
-            options: Object.assign(
-                {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: chartType !== "bar" },
-                        tooltip: { enabled: true }
-                    },
-                    scales: chartType === "pie" || chartType === "doughnut" ? {} : {
-                        y: { beginAtZero: true }
-                    }
-                },
-                options
-            )
-        };
-
-        ensureChart(chartId, config);
+    window.mjChartsDestroy = function (id) {
+        try {
+            if (window.mjCharts[id]) {
+                window.mjCharts[id].destroy();
+                delete window.mjCharts[id];
+            }
+        } catch (e) { }
     };
 
-    window.mjChartsDestroy = function (chartId) {
-        if (store[chartId]) {
-            store[chartId].destroy();
-            delete store[chartId];
+    window.mjChartsInitOrUpdate = function (canvasId, type, labels, data, label, optionsJson) {
+        // If Chart.js isn't available, don't crash the app.
+        if (!window.Chart) return;
+
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+
+        // destroy old chart if exists
+        if (window.mjCharts[canvasId]) {
+            window.mjCharts[canvasId].destroy();
+            delete window.mjCharts[canvasId];
         }
+
+        let parsedOptions = {};
+        try { parsedOptions = optionsJson ? JSON.parse(optionsJson) : {}; } catch (e) { parsedOptions = {}; }
+
+        const cfg = {
+            type: type,
+            data: {
+                labels: labels || [],
+                datasets: [{
+                    label: label || "",
+                    data: data || []
+                }]
+            },
+            options: Object.assign({
+                responsive: true,
+                maintainAspectRatio: false
+            }, parsedOptions)
+        };
+
+        const ctx = el.getContext("2d");
+        window.mjCharts[canvasId] = new Chart(ctx, cfg);
     };
 })();

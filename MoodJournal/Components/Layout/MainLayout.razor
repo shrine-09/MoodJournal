@@ -1,5 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject IJSRuntime JS
+@using MoodJournal.Components
+
 
 <div class="app-shell">
     <aside class="sidebar">
@@ -27,6 +29,7 @@
             @Body
         </main>
     </div>
+    
 </div>
 
 @code {
@@ -51,3 +54,5 @@
         }
     }
 }
+
+<PinLockOverlay />

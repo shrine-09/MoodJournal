@@ -1,0 +1,53 @@
+@using MoodJournal.Services
+@inject PinService Pin
+@inject AppLockState LockState
+
+@if (Pin.IsEnabled && !LockState.Unlocked)
+{
+    <div class="pin-overlay">
+        <div class="pin-card">
+            <div class="pin-title">Enter PIN</div>
+            <div class="pin-sub">This app is locked.</div>
+
+            <input class="pin-input"
+                   type="password"
+                   inputmode="numeric"
+                   maxlength="6"
+                   placeholder="PIN"
+                   @bind="PinInput" />
+
+            @if (!string.IsNullOrWhiteSpace(Error))
+            {
+                <div class="pin-error">@Error</div>
+            }
+
+            <button class="pin-btn" @onclick="Unlock">Unlock</button>
+        </div>
+    </div>
+}
+
+@code {
+    private string PinInput = "";
+    private string Error = "";
+
+    private void Unlock()
+    {
+        Error = "";
+
+        if (string.IsNullOrWhiteSpace(PinInput))
+        {
+            Error = "PIN is required.";
+            return;
+        }
+
+        if (!Pin.Verify(PinInput))
+        {
+            Error = "Incorrect PIN.";
+            PinInput = "";
+            return;
+        }
+
+        LockState.SetUnlocked(true);
+        PinInput = "";
+    }
+}

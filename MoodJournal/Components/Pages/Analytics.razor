@@ -13,6 +13,7 @@
 
     <div class="card analytics-toolbar">
         <div class="analytics-toolbar-row">
+            <!-- From/To side by side -->
             <div class="analytics-range">
                 <div class="field">
                     <label class="label">From</label>
@@ -31,10 +32,19 @@
             </div>
         </div>
 
-
         <div class="subtle analytics-meta">
             Showing <b>@FilteredCount</b> entries from <b>@FromAppliedLabel</b> to <b>@ToAppliedLabel</b>
         </div>
+
+        @if (!string.IsNullOrWhiteSpace(ChartError))
+        {
+            <div class="card empty" style="margin-top:10px;">
+                <b>Charts not loaded:</b> @ChartError
+                <div class="subtle" style="margin-top:6px;">
+                    This will not freeze the app. It just means Chart.js / analyticsCharts.js isn't loaded yet.
+                </div>
+            </div>
+        }
     </div>
 
     @if (FilteredCount == 0)
@@ -87,18 +97,20 @@
 @code {
     private List<JournalEntry> _all = new();
     private List<JournalEntry> _filtered = new();
-    
+
     private string FromDraft = "";
     private string ToDraft = "";
-    
+
     private DateTime FromApplied;
     private DateTime ToApplied;
 
     private bool _needsChartUpdate = false;
-    
+
     private string MoodDistText = "";
     private int AvgWords = 0;
-    
+
+    private string ChartError = "";
+
     private static readonly HashSet<string> Positive = new(StringComparer.OrdinalIgnoreCase)
     { "Happy","Excited","Relaxed","Grateful","Confident" };
 
@@ -140,9 +152,7 @@
         var to = TryParseDate(ToDraft) ?? DateTime.Today;
 
         if (to < from)
-        {
             (from, to) = (to, from);
-        }
 
         FromApplied = from.Date;
         ToApplied = to.Date;
@@ -152,6 +162,8 @@
 
     private void ApplyInternal()
     {
+        ChartError = "";
+
         _filtered = _all
             .Where(e =>
             {
@@ -162,8 +174,9 @@
             .ToList();
 
         ComputeMetricsForCharts();
+
+        // triggers a single chart update after render
         _needsChartUpdate = true;
-        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -171,63 +184,45 @@
         if (!_needsChartUpdate) return;
         _needsChartUpdate = false;
 
-        if (_filtered.Count == 0)
+        if (_filtered.Count == 0) return;
+
+        try
         {
-            //optional: destroy charts when empty
-            await JS.InvokeVoidAsync("mjChartsDestroy", "moodDistChart");
-            await JS.InvokeVoidAsync("mjChartsDestroy", "frequentMoodsChart");
-            await JS.InvokeVoidAsync("mjChartsDestroy", "mostUsedTagsChart");
-            await JS.InvokeVoidAsync("mjChartsDestroy", "tagBreakdownChart");
-            await JS.InvokeVoidAsync("mjChartsDestroy", "wordCountTrendChart");
-            return;
+            // If JS helpers / Chart.js are missing, our JS file will no-op
+            await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
+                "moodDistChart", "doughnut",
+                _moodDistLabels, _moodDistData,
+                "Mood % (range)", "{}");
+
+            await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
+                "frequentMoodsChart", "bar",
+                _freqMoodLabels, _freqMoodData,
+                "Count", "{\"plugins\":{\"legend\":{\"display\":false}}}");
+
+            await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
+                "mostUsedTagsChart", "bar",
+                _tagTopLabels, _tagTopData,
+                "Uses", "{\"plugins\":{\"legend\":{\"display\":false}}}");
+
+            await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
+                "tagBreakdownChart", "bar",
+                _tagBreakLabels, _tagBreakData,
+                "% of entries",
+                "{\"plugins\":{\"legend\":{\"display\":false}},\"scales\":{\"y\":{\"beginAtZero\":true,\"max\":100}}}");
+
+            await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
+                "wordCountTrendChart", "line",
+                _wcLabels, _wcData,
+                "Words", "{\"plugins\":{\"legend\":{\"display\":false}}}");
         }
-
-        //Mood Distribution doughnut
-        await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
-            "moodDistChart",
-            "doughnut",
-            _moodDistLabels,
-            _moodDistData,
-            "Mood % (range)",
-            "{}");
-
-        //Frequent moods bar
-        await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
-            "frequentMoodsChart",
-            "bar",
-            _freqMoodLabels,
-            _freqMoodData,
-            "Count",
-            "{\"plugins\":{\"legend\":{\"display\":false}}}");
-
-        //Most used tags bar
-        await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
-            "mostUsedTagsChart",
-            "bar",
-            _tagTopLabels,
-            _tagTopData,
-            "Uses",
-            "{\"plugins\":{\"legend\":{\"display\":false}}}");
-
-        //Tag breakdown ibut in % bar
-        await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
-            "tagBreakdownChart",
-            "bar",
-            _tagBreakLabels,
-            _tagBreakData,
-            "% of entries",
-            "{\"plugins\":{\"legend\":{\"display\":false}},\"scales\":{\"y\":{\"beginAtZero\":true,\"max\":100}}}");
-
-        //Word count trends line
-        await JS.InvokeVoidAsync("mjChartsInitOrUpdate",
-            "wordCountTrendChart",
-            "line",
-            _wcLabels,
-            _wcData,
-            "Words",
-            "{\"plugins\":{\"legend\":{\"display\":false}}}");
+        catch (Exception ex)
+        {
+            // Important: don’t freeze the app; show a clean message
+            ChartError = ex.Message;
+            StateHasChanged();
+        }
     }
-    
+
     private string[] _moodDistLabels = Array.Empty<string>();
     private double[] _moodDistData = Array.Empty<double>();
 
@@ -245,7 +240,6 @@
 
     private void ComputeMetricsForCharts()
     {
-        //mood distribution as %
         int pos = 0, neu = 0, neg = 0;
         foreach (var e in _filtered)
         {
@@ -265,7 +259,6 @@
         _moodDistData = new[] { posPct, neuPct, negPct };
         MoodDistText = $"Positive {posPct:0.#}% • Neutral {neuPct:0.#}% • Negative {negPct:0.#}%";
 
-        //frequent moods (top 8)
         var moodCounts = _filtered
             .GroupBy(e => (e.PrimaryMood ?? "Unknown").Trim())
             .Select(g => new { Mood = g.Key, Count = g.Count() })
@@ -276,7 +269,7 @@
 
         _freqMoodLabels = moodCounts.Select(x => x.Mood).ToArray();
         _freqMoodData = moodCounts.Select(x => (double)x.Count).ToArray();
-        
+
         var tagUseCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var tagEntryCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -284,14 +277,13 @@
         {
             var tags = SplitTags(e.TagsCsv).ToList();
             if (tags.Count == 0) continue;
-            
+
             foreach (var t in tags)
             {
                 if (!tagUseCounts.ContainsKey(t)) tagUseCounts[t] = 0;
                 tagUseCounts[t]++;
             }
 
-            //entries containing tag (distinct)
             foreach (var t in tags.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 if (!tagEntryCounts.ContainsKey(t)) tagEntryCounts[t] = 0;
@@ -299,7 +291,6 @@
             }
         }
 
-        //Most used tags (top 10 by occurrences)
         var topTags = tagUseCounts
             .OrderByDescending(kv => kv.Value)
             .ThenBy(kv => kv.Key)
@@ -309,7 +300,6 @@
         _tagTopLabels = topTags.Select(x => x.Key).ToArray();
         _tagTopData = topTags.Select(x => (double)x.Value).ToArray();
 
-        //Tag breakdown by % of entries (top 8 by entry count)
         var topBreak = tagEntryCounts
             .OrderByDescending(kv => kv.Value)
             .ThenBy(kv => kv.Key)
@@ -319,7 +309,6 @@
         _tagBreakLabels = topBreak.Select(x => x.Key).ToArray();
         _tagBreakData = topBreak.Select(x => x.Value * 100.0 / total).ToArray();
 
-        //Word count trends
         var wc = _filtered
             .OrderBy(e => e.EntryDate)
             .Select(e => new
@@ -351,5 +340,4 @@
         if (string.IsNullOrWhiteSpace(csv)) return Enumerable.Empty<string>();
         return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
-
 }

@@ -1,0 +1,97 @@
+/*background effect for lock screen*/
+.pin-overlay{
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    /* darken */
+    background: rgba(0,0,0,0.35);
+
+    /* blur behind */
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+}
+
+/* fallback if blur isn't supported */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+    .pin-overlay{
+        background: rgba(0,0,0,0.55);
+    }
+}
+
+.pin-card{
+    width: min(420px, 92vw);
+    background: var(--panel);
+    border: 1px solid rgba(15,23,42,0.12);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+.pin-title{
+    font-weight: 900;
+    font-size: 22px;
+    color: black;
+}
+
+.pin-sub{
+    margin-top: 6px;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.pin-input{
+    margin-top: 12px;
+    width: 100%;
+    height: 44px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,0.14);
+    box-sizing: border-box;
+}
+
+.pin-error{
+    margin-top: 10px;
+    color: #b91c1c;
+    font-weight: 800;
+}
+
+.pin-btn{
+    margin-top: 12px;
+    width: 100%;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,0.14);
+    background: rgba(15,23,42,0.92);
+    color: #fff;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.settings-card{
+    margin-top: 14px;
+}
+
+.settings-actions{
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.settings-change{
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(15,23,42,0.08);
+}
+
+.settings-msg{
+    margin-top: 10px;
+    font-weight: 800;
+    color: var(--muted);
+}

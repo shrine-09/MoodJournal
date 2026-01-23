@@ -27,7 +27,9 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddScoped<ThemeService>();
-        builder.Services.AddSingleton<JournalRepository>(); // local SQLite repo
+        builder.Services.AddSingleton<JournalRepository>(); //for local SQLite repo
+        builder.Services.AddSingleton<PinService>(); //pin for the lock
+        builder.Services.AddSingleton<AppLockState>(); //system lock 
 
         return builder.Build();
     }
