@@ -3,6 +3,7 @@
 @using MoodJournal.Models
 @using MoodJournal.Services
 @inject JournalRepository Repo
+@inject PdfExportService PdfExport
 
 <div class="mj-page">
     <div class="mj-page-header">
@@ -10,7 +11,7 @@
         <div class="mj-subtitle">Search and filter your entries.</div>
     </div>
 
-    <!-- Search + Filter -->
+    <!-- Search and filter -->
     <div class="mj-card mj-search-card">
         <div class="mj-search-row">
             <input class="mj-input mj-search"
@@ -37,6 +38,7 @@
                 <!-- Date filter -->
                 <div class="mj-filter-box">
                     <div class="mj-filter-title">Date</div>
+
                     <div class="mj-field">
                         <label class="mj-label">From (optional)</label>
                         <input class="mj-input mj-input-sm mj-date"
@@ -44,6 +46,7 @@
                                value="@DateFromDraft"
                                @onchange="OnDateFromChanged" />
                     </div>
+
                     <div class="mj-field">
                         <label class="mj-label">To (optional)</label>
                         <input class="mj-input mj-input-sm mj-date"
@@ -51,6 +54,10 @@
                                value="@DateToDraft"
                                @onchange="OnDateToChanged" />
                     </div>
+
+                    <button class="mj-btn mj-btn-outline" type="button" @onclick="ExportPdf">
+                        Export PDF
+                    </button>
                 </div>
 
                 <!-- Mood filter -->
@@ -104,7 +111,7 @@
         }
     </div>
 
-    <!-- Entries + Pagination (TOP ONLY, no First/Last) -->
+    <!-- Entries and Pagination -->
     <div class="mj-section">
         <div class="mj-section-header">
             <div>
@@ -168,10 +175,8 @@
                         <div class="mj-pill mj-pill-mood">@e.PrimaryMood</div>
                     </div>
 
-                    @if (!string.IsNullOrWhiteSpace(e.Title))
-                    {
-                        <div class="mj-entry-title">@e.Title</div>
-                    }
+                    <!-- IMPORTANT: Title removed to prevent duplicate "Day ... check-in" feel -->
+                    <!-- If you want titles later, we can add a conditional rule -->
 
                     <div class="mj-entry-tags">
                         @foreach (var tag in SplitTags(e.TagsCsv))
@@ -192,10 +197,8 @@
 @code {
     private List<JournalEntry> AllEntries = new();
 
-    //UI state
     private bool ShowFilters = true;
 
-    //draft inputs 
     private string SearchDraft = "";
     private string DateFromDraft = "";
     private string DateToDraft = "";
@@ -203,17 +206,17 @@
     private string TagDraft = "";
     private string CustomTagDraft = "";
 
-    //applied filters
     private string SearchApplied = "";
     private DateTime? DateFromApplied = null;
     private DateTime? DateToApplied = null;
     private string MoodApplied = "";
     private string TagApplied = "";
 
-    //pagination
     private int PageSize = 10;
     private int CurrentPage = 1;
-    
+
+    private bool _isExporting = false;
+
     private static readonly string[] AllMoods =
     {
         "Happy","Excited","Relaxed","Grateful","Confident",
@@ -245,7 +248,6 @@
 
         MoodApplied = (MoodDraft ?? "").Trim();
 
-        //custom tag overrides prebuilt tag
         var custom = (CustomTagDraft ?? "").Trim();
         TagApplied = !string.IsNullOrWhiteSpace(custom)
             ? custom
@@ -274,14 +276,25 @@
         StateHasChanged();
     }
 
-    // ----- Filtering + paging -----
+    private async Task ExportPdf()
+    {
+        var list = FilteredEntries; // IMPORTANT: not AllEntries
+        if (list.Count == 0) return;
+
+        // Your FilteredEntries is ordered DESC by EntryDate (newest first)
+        // so:
+        var from = DateFromApplied ?? ParseEntryDate(list.Last().EntryDate);
+        var to   = DateToApplied   ?? ParseEntryDate(list.First().EntryDate);
+
+        await PdfExport.ExportEntriesAsync(list, from, to);
+    }
+
     private List<JournalEntry> FilteredEntries
     {
         get
         {
             IEnumerable<JournalEntry> q = AllEntries;
 
-            // Search
             if (!string.IsNullOrWhiteSpace(SearchApplied))
             {
                 var s = SearchApplied.ToLowerInvariant();
@@ -290,18 +303,15 @@
                     (e.ContentText ?? "").ToLowerInvariant().Contains(s));
             }
 
-            // Date range
             if (DateFromApplied is not null)
                 q = q.Where(e => ParseEntryDate(e.EntryDate) >= DateFromApplied.Value.Date);
 
             if (DateToApplied is not null)
                 q = q.Where(e => ParseEntryDate(e.EntryDate) <= DateToApplied.Value.Date);
 
-            // Mood
             if (!string.IsNullOrWhiteSpace(MoodApplied))
                 q = q.Where(e => string.Equals(e.PrimaryMood, MoodApplied, StringComparison.OrdinalIgnoreCase));
 
-            // Tag
             if (!string.IsNullOrWhiteSpace(TagApplied))
             {
                 var t = TagApplied.ToLowerInvariant();
@@ -348,7 +358,6 @@
             var start = Math.Max(1, CurrentPage - 2);
             var end = Math.Min(TotalPages, start + 4);
 
-            //to shift back if near the end
             start = Math.Max(1, end - 4);
 
             for (var i = start; i <= end; i++)
@@ -382,7 +391,6 @@
         }
     }
 
-    //UI handling functins
     private void ToggleFilters() => ShowFilters = !ShowFilters;
 
     private void OnSearchDraftInput(ChangeEventArgs e) => SearchDraft = e.Value?.ToString() ?? "";
@@ -406,9 +414,8 @@
             TagDraft = "";
     }
 
-    //Helpers
     private static DateTime ParseEntryDate(string entryDate) =>
-        DateTime.ParseExact(entryDate, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+        DateTime.ParseExact(entryDate, "yyyy-MM-dd", CultureInfo.InvariantCulture).Date;
 
     private static DateTime? TryParseDate(string s)
     {
