@@ -2,34 +2,52 @@
     const KEY = "mj_theme";
 
     function apply(theme) {
-        //theme = "dark" | "light"
         document.documentElement.setAttribute("data-theme", theme);
+
+        document.documentElement.style.colorScheme = theme === "dark" ? "dark" : "light";
     }
 
-    window.getTheme = function () {
+    function safeGet() {
         try {
             return localStorage.getItem(KEY) || "light";
         } catch {
             return "light";
         }
-    };
+    }
 
-    window.setTheme = function (theme) {
+    function safeSet(theme) {
         try {
             localStorage.setItem(KEY, theme);
         } catch { }
+    }
+
+    window.getTheme = function () {
+        return safeGet();
+    };
+
+    window.setTheme = function (theme) {
+        safeSet(theme);
         apply(theme);
     };
 
     window.toggleTheme = function () {
-        const current = window.getTheme();
+        const current = safeGet();
         const next = current === "dark" ? "light" : "dark";
-        window.setTheme(next);
+        safeSet(next);
+        apply(next);
         return next;
     };
 
-    //applying automatically on load
+    window.moodJournalTheme = {
+        getTheme: () => safeGet(),
+        setTheme: (theme) => {
+            safeSet(theme);
+            apply(theme);
+        },
+        toggleTheme: () => window.toggleTheme()
+    };
+
     document.addEventListener("DOMContentLoaded", () => {
-        apply(window.getTheme());
+        apply(safeGet());
     });
 })();

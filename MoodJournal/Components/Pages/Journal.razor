@@ -175,9 +175,6 @@
                         <div class="mj-pill mj-pill-mood">@e.PrimaryMood</div>
                     </div>
 
-                    <!-- IMPORTANT: Title removed to prevent duplicate "Day ... check-in" feel -->
-                    <!-- If you want titles later, we can add a conditional rule -->
-
                     <div class="mj-entry-tags">
                         @foreach (var tag in SplitTags(e.TagsCsv))
                         {
@@ -215,7 +212,6 @@
     private int PageSize = 10;
     private int CurrentPage = 1;
 
-    private bool _isExporting = false;
 
     private static readonly string[] AllMoods =
     {
@@ -278,11 +274,9 @@
 
     private async Task ExportPdf()
     {
-        var list = FilteredEntries; // IMPORTANT: not AllEntries
+        var list = FilteredEntries;
         if (list.Count == 0) return;
 
-        // Your FilteredEntries is ordered DESC by EntryDate (newest first)
-        // so:
         var from = DateFromApplied ?? ParseEntryDate(list.Last().EntryDate);
         var to   = DateToApplied   ?? ParseEntryDate(list.First().EntryDate);
 

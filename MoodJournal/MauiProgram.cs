@@ -29,7 +29,7 @@ public static class MauiProgram
         builder.Services.AddScoped<ThemeService>();
         builder.Services.AddSingleton<JournalRepository>(); //for local SQLite repo
         builder.Services.AddSingleton<PinService>(); //pin for the lock
-        builder.Services.AddSingleton<AppLockState>(); //system lock 
+        builder.Services.AddSingleton<AppLockService>(); //system lock 
         builder.Services.AddSingleton<PdfExportService>(); //pdf esport service
 
 

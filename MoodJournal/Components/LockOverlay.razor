@@ -1,0 +1,63 @@
+@namespace MoodJournal.Components
+@using MoodJournal.Services
+@implements IDisposable
+@inject AppLockService AppLock
+
+@if (AppLock.IsLocked)
+{
+    <div class="lock-overlay" @onclick:stopPropagation="true">
+        <div class="lock-card">
+            <div class="lock-title">App Locked</div>
+            <div class="lock-sub">Enter your PIN to continue.</div>
+
+            <input class="mj-input"
+                   type="password"
+                   inputmode="numeric"
+                   maxlength="6"
+                   value="@_pin"
+                   @oninput="OnPinInput" />
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="lock-error">@_error</div>
+            }
+
+            <button class="mj-btn" type="button" @onclick="Unlock">
+                Unlock
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private string _pin = "";
+    private string _error = "";
+
+    protected override void OnInitialized()
+    {
+        AppLock.Changed += OnChanged;
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnPinInput(ChangeEventArgs e)
+    {
+        _pin = e.Value?.ToString() ?? "";
+        _error = "";
+    }
+
+    private async Task Unlock()
+    {
+        await Task.Yield();
+
+        if (!AppLock.TryUnlock(_pin))
+            _error = "Wrong PIN. Try again.";
+
+        _pin = "";
+    }
+
+    public void Dispose()
+    {
+        AppLock.Changed -= OnChanged;
+    }
+}

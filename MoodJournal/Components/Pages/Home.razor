@@ -1,34 +1,153 @@
 @page "/"
+@using System.Globalization
+@using MoodJournal.Models
+@using MoodJournal.Services
+@inject JournalRepository Repo
+@inject NavigationManager Nav
 
-<div class="card">
-    <h1 style="margin:0 0 12px 0;">Analytics Overview</h1>
-    <p style="margin:0;color:var(--muted);">This is a styling test. Next we’ll wire real data.</p>
+<div class="home-page">
+    <div class="page-head">
+        <div>
+            <h1 class="h1">Welcome</h1>
+            <div class="subtle">Quick insights from your journal.</div>
+        </div>
+
+        <button class="btn-primary" type="button" @onclick="GoToday">
+            Write Today
+        </button>
+    </div>
+
+    <div class="home-grid">
+        <div class="card home-stat">
+            <div class="home-stat-value">@DailyStreak</div>
+            <div class="home-stat-label">Daily Streak</div>
+            <div class="home-stat-sub">Current consecutive days of journaling</div>
+        </div>
+
+        <div class="card home-stat">
+            <div class="home-stat-value">@LongestStreak</div>
+            <div class="home-stat-label">Longest Streak</div>
+            <div class="home-stat-sub">Maximum streak achieved</div>
+        </div>
+
+        <div class="card home-stat">
+            <div class="home-stat-value">@MissedDays.Count</div>
+            <div class="home-stat-label">Missed Days</div>
+            <div class="home-stat-sub">Last 30 days</div>
+        </div>
+
+        <div class="card home-wide">
+            <div class="home-wide-title">Missed Days (last 30 days)</div>
+
+            @if (TotalEntries == 0)
+            {
+                <div class="subtle">No entries yet — write your first one to start tracking streaks.</div>
+            }
+            else if (MissedDays.Count == 0)
+            {
+                <div class="subtle">No missed days 🎉</div>
+            }
+            else
+            {
+                <div class="home-missed">
+                    @foreach (var d in MissedDays)
+                    {
+                        <span class="pill">@d.ToString("MMM dd", CultureInfo.InvariantCulture)</span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
-<div style="height:14px;"></div>
+@code {
+    private List<JournalEntry> _all = new();
+    private HashSet<DateTime> _days = new();
 
-<div class="grid grid-4">
-    <div class="stat a">
-        <h3>12</h3>
-        <p>Entries this month</p>
-    </div>
-    <div class="stat b">
-        <h3>4</h3>
-        <p>Day streak</p>
-    </div>
-    <div class="stat c">
-        <h3>Happy</h3>
-        <p>Most frequent mood</p>
-    </div>
-    <div class="stat d">
-        <h3>68%</h3>
-        <p>Positive days</p>
-    </div>
-</div>
+    private int TotalEntries => _all.Count;
 
-<div style="height:14px;"></div>
+    private int DailyStreak { get; set; }
+    private int LongestStreak { get; set; }
+    private List<DateTime> MissedDays { get; set; } = new();
 
-<div class="card">
-    <h2 style="margin:0 0 8px 0;">Visitors Overview (placeholder)</h2>
-    <p style="margin:0;color:var(--muted);">Next we’ll replace this with mood charts.</p>
-</div>
+    private void GoToday() => Nav.NavigateTo("/today");
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _all = await Repo.GetAllAsync();
+
+        _days = _all
+            .Select(e => ParseEntryDateSafe(e.EntryDate))
+            .Distinct()
+            .ToHashSet();
+
+        DailyStreak = ComputeCurrentStreak(_days);
+        LongestStreak = ComputeLongestStreak(_days);
+        MissedDays = ComputeMissedDaysLast30(_days);
+    }
+
+    private static DateTime ParseEntryDateSafe(string entryDate)
+    {
+        if (DateTime.TryParseExact(entryDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var dt))
+            return dt.Date;
+
+        return DateTime.Today;
+    }
+
+    private static int ComputeCurrentStreak(HashSet<DateTime> days)
+    {
+        if (days.Count == 0) return 0;
+
+        var start = DateTime.Today;
+
+        if (!days.Contains(start) && days.Contains(start.AddDays(-1)))
+            start = start.AddDays(-1);
+
+        var streak = 0;
+        while (days.Contains(start))
+        {
+            streak++;
+            start = start.AddDays(-1);
+        }
+
+        return streak;
+    }
+
+    private static int ComputeLongestStreak(HashSet<DateTime> days)
+    {
+        if (days.Count == 0) return 0;
+
+        var ordered = days.OrderBy(d => d).ToList();
+
+        var best = 1;
+        var run = 1;
+
+        for (int i = 1; i < ordered.Count; i++)
+        {
+            var diff = (ordered[i] - ordered[i - 1]).TotalDays;
+
+            if (diff == 1) run++;
+            else run = 1;
+
+            if (run > best) best = run;
+        }
+
+        return best;
+    }
+
+    private static List<DateTime> ComputeMissedDaysLast30(HashSet<DateTime> days)
+    {
+        var list = new List<DateTime>();
+        var from = DateTime.Today.AddDays(-29);
+
+        for (var d = from; d <= DateTime.Today; d = d.AddDays(1))
+        {
+            if (!days.Contains(d.Date))
+                list.Add(d.Date);
+        }
+
+        list.Reverse();
+        return list;
+    }
+}

@@ -1,7 +1,7 @@
 @page "/settings"
+@using System.Linq
 @using MoodJournal.Services
-@inject PinService Pin
-@inject AppLockState LockState
+@inject AppLockService AppLock
 
 <div class="settings-page">
     <h1 class="h1">Settings</h1>
@@ -10,7 +10,7 @@
     <div class="card settings-card">
         <h2 class="h2">PIN Lock</h2>
 
-        @if (!Pin.IsEnabled)
+        @if (!AppLock.IsLockEnabled)
         {
             <div class="subtle">PIN lock is currently disabled.</div>
 
@@ -29,7 +29,7 @@
                 <div class="settings-msg">@Message</div>
             }
 
-            <button class="btn" @onclick="EnablePin">Enable PIN</button>
+            <button class="btn" type="button" @onclick="EnablePin">Enable PIN</button>
         }
         else
         {
@@ -41,11 +41,11 @@
             </div>
 
             <div class="settings-actions">
-                <button class="btn btn-ghost" @onclick="DisablePin">Disable PIN</button>
-                <button class="btn" type="button" @onclick="() => ShowChange = !ShowChange">
+                <button class="btn btn-ghost" type="button" @onclick="DisablePin">Disable PIN</button>
+
+                <button class="btn" type="button" @onclick="ToggleChange">
                     @(ShowChange ? "Cancel" : "Change PIN")
                 </button>
-
             </div>
 
             @if (ShowChange)
@@ -61,7 +61,7 @@
                         <input class="mj-input" type="password" maxlength="6" inputmode="numeric" @bind="ConfirmPin" />
                     </div>
 
-                    <button class="btn" @onclick="ChangePin">Save New PIN</button>
+                    <button class="btn" type="button" @onclick="ChangePin">Save New PIN</button>
                 </div>
             }
 
@@ -80,6 +80,14 @@
     private bool ShowChange = false;
     private string Message = "";
 
+    private void ToggleChange()
+    {
+        ShowChange = !ShowChange;
+        Message = "";
+        NewPin = "";
+        ConfirmPin = "";
+    }
+
     private void EnablePin()
     {
         Message = "";
@@ -96,31 +104,27 @@
             return;
         }
 
-        Pin.EnableWithPin(NewPin);
-
-        // Lock immediately after enabling, so next open requires PIN
-        LockState.SetUnlocked(false);
+        AppLock.EnableWithPin(NewPin);  
 
         CurrentPin = "";
         NewPin = "";
         ConfirmPin = "";
         ShowChange = false;
 
-        Message = "PIN enabled.";
+        Message = "PIN enabled. Please unlock to continue.";
     }
 
     private void DisablePin()
     {
         Message = "";
 
-        if (!Pin.Verify(CurrentPin))
+        if (!AppLock.Verify(CurrentPin))
         {
             Message = "Incorrect current PIN.";
             return;
         }
 
-        Pin.Disable();
-        LockState.SetUnlocked(true);
+        AppLock.Disable();
 
         CurrentPin = "";
         NewPin = "";
@@ -134,7 +138,7 @@
     {
         Message = "";
 
-        if (!Pin.Verify(CurrentPin))
+        if (!AppLock.Verify(CurrentPin))
         {
             Message = "Incorrect current PIN.";
             return;
@@ -152,7 +156,7 @@
             return;
         }
 
-        Pin.ChangePin(CurrentPin, NewPin);
+        AppLock.ChangePin(CurrentPin, NewPin);
 
         CurrentPin = "";
         NewPin = "";

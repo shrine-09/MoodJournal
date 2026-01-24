@@ -6,7 +6,6 @@
     box-sizing: border-box;
 }
 
-/* Header */
 .mj-page-header{
     margin-bottom: 14px;
 }
@@ -22,22 +21,20 @@
     font-weight: 600;
 }
 
-/* Base card */
 .mj-card{
-    background: var(--panel);
-    border: 1px solid rgba(15,23,42,0.08);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 18px;
-    box-shadow: 0 10px 30px rgba(15,23,42,0.06);
+    box-shadow: var(--shadow);
     padding: 14px;
     box-sizing: border-box;
+    backdrop-filter: blur(10px) saturate(120%);
 }
 
-/* Search card */
 .mj-search-card{
     margin-top: 14px;
 }
 
-/* Search row */
 .mj-search-row{
     display: grid;
     grid-template-columns: 1fr auto auto auto;
@@ -48,28 +45,16 @@
     width: 100%;
 }
 
-/* Inputs */
 .mj-input{
-    width: 100%;
-    height: 44px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    border: 1px solid rgba(15,23,42,0.12);
-    background: rgba(255,255,255,0.8);
-    outline: none;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    box-sizing: border-box;
-    max-width: 100%;
-    min-width: 0;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
 }
+
 .mj-input:focus{
     border-color: rgba(99,102,241,0.45);
     box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
 }
 
-/* Smaller input for compact controls */
 .mj-input-sm{
     height: 36px;
     padding: 6px 10px;
@@ -80,7 +65,6 @@
     min-width: 0;
 }
 
-/* Date inputs: prevent overflow + make picker control behave */
 .mj-input[type="date"],
 .mj-input-sm[type="date"]{
     width: 100%;
@@ -92,7 +76,6 @@
     padding-right: 34px;
 }
 
-/* Smaller WebKit calendar icon */
 .mj-input[type="date"]::-webkit-calendar-picker-indicator,
 .mj-input-sm[type="date"]::-webkit-calendar-picker-indicator{
     width: 16px;
@@ -102,7 +85,6 @@
     cursor: pointer;
 }
 
-/* Buttons */
 .mj-btn{
     height: 44px;
     padding: 0 14px;
@@ -140,7 +122,7 @@
     background: rgba(15,23,42,0.04);
 }
 
-/* Filters */
+/*Filters */
 .mj-filter-grid{
     margin-top: 12px;
     padding-top: 12px;
@@ -152,14 +134,12 @@
 }
 
 .mj-filter-box{
-    border: 1px solid rgba(15,23,42,0.08);
+    border: 1px solid var(--border);
     border-radius: 16px;
     padding: 12px;
-    background: rgba(255,255,255,0.55);
-    min-width: 0;
-    overflow: hidden;
-    box-sizing: border-box;
+    background: var(--surface-2);
 }
+
 .mj-filter-title{
     font-weight: 900;
     font-size: 16px;
@@ -299,10 +279,11 @@
     align-items: center;
     gap: 12px;
 }
-.mj-entry-date{
-    font-weight: 900;
-    color: rgba(15,23,42,0.65);
-}
+
+.mj-entry-date{ color: var(--muted); }
+.mj-entry-content{ color: var(--text); }
+.mj-tag{ color: var(--text); }
+
 .mj-entry-title{
     font-size: 18px;
     font-weight: 900;
@@ -313,25 +294,6 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 8px;
-}
-.mj-tag{
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(15,23,42,0.10);
-    background: rgba(15,23,42,0.04);
-    font-weight: 800;
-    font-size: 12px;
-    color: rgba(15,23,42,0.72);
-}
-.mj-entry-content{
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(15,23,42,0.08);
-    color: rgba(15,23,42,0.78);
-    line-height: 1.55;
 }
 
 .mj-export{

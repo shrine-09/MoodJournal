@@ -1,7 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject IJSRuntime JS
+@inject MoodJournal.Services.AppLockService AppLock
 @using MoodJournal.Components
-
 
 <div class="app-shell">
     <aside class="sidebar">
@@ -29,11 +29,18 @@
             @Body
         </main>
     </div>
-    
+
+    <LockOverlay />
 </div>
 
 @code {
     private bool _toggling;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await AppLock.InitAsync();
+    }
 
     private async Task ToggleThemeSafe()
     {
@@ -46,7 +53,7 @@
         }
         catch
         {
-            //catch adding later
+            //lter
         }
         finally
         {
@@ -54,5 +61,3 @@
         }
     }
 }
-
-<PinLockOverlay />

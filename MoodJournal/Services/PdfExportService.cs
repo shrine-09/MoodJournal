@@ -27,7 +27,6 @@ public class PdfExportService
         const double margin = 40;
         const double gap = 3;
 
-        // Use a font name; PDFsharp Core build will map via resolver if needed.
         var titleFont = new XFont("OpenSans", 18, XFontStyleEx.Bold);
         var hFont     = new XFont("OpenSans", 12, XFontStyleEx.Bold);
         var bodyFont  = new XFont("OpenSans", 11, XFontStyleEx.Regular);
@@ -38,7 +37,7 @@ public class PdfExportService
         var width = page.Width.Point - margin * 2;
         var pageBottom = page.Height.Point - margin;
 
-        // Header
+        //header
         y = DrawLine(gfx, "MoodJournal Export", titleFont, margin, y, width) + 2;
         y = DrawLine(
                 gfx,
@@ -51,7 +50,6 @@ public class PdfExportService
 
         foreach (var e in list)
         {
-            // Start a new page if we’re close to the bottom
             if (y > pageBottom - 120)
                 (page, gfx, y) = NewPage(doc, margin);
 
@@ -179,13 +177,11 @@ internal sealed class SimpleFontResolver : IFontResolver
 
     public byte[] GetFont(string faceName)
     {
-        // Use the same font file for everything (regular + bold)
         return LoadFont("OpenSans-Regular.ttf");
     }
 
     public FontResolverInfo ResolveTypeface(string familyName, bool isBold, bool isItalic)
     {
-        // Map any request (bold/italic/regular) to the same face
         return new FontResolverInfo("OpenSans#");
     }
 
