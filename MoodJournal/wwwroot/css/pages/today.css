@@ -1,7 +1,6 @@
-/*Two column layout for large screens since mac has bigres*/
 .today-grid{
     display: grid;
-    grid-template-columns: minmax(680px, 1fr) 360px;
+    grid-template-columns: 1fr;
     gap: 18px;
     align-items: start;
 }
@@ -10,61 +9,6 @@
     width: 100%;
 }
 
-.summary-card{
-    position: sticky;
-    top: 18px;
-}
-
-.summary-title{
-    font-weight: 900;
-    font-size: 16px;
-    margin-bottom: 6px;
-}
-
-.summary-sub{
-    color: var(--muted);
-    font-weight: 700;
-    font-size: 12px;
-    margin-bottom: 14px;
-}
-
-.summary-grid{
-    display: grid;
-    gap: 12px;
-}
-
-.summary-item{
-    padding: 12px 12px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    background: rgba(100,116,139,0.05);
-}
-
-.summary-label{
-    color: var(--muted);
-    font-weight: 800;
-    font-size: 12px;
-    margin-bottom: 6px;
-}
-
-.summary-value{
-    font-weight: 900;
-    color: var(--text);
-    font-size: 13px;
-    line-height: 1.35;
-    word-break: break-word;
-}
-
-.summary-note{
-    margin-top: 14px;
-    color: var(--muted);
-    font-weight: 700;
-    font-size: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-}
-
-/*small layout helpers*/
 .entry-top{
     display:flex;
     align-items:flex-start;
@@ -91,6 +35,51 @@
     background: var(--surface);
 }
 
+.editor-card .ql-toolbar.ql-snow{
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: rgba(100,116,139,0.05);
+}
+
+.editor-card .ql-container.ql-snow{
+    border: 0;
+    background: transparent;
+}
+
+.editor-card .ql-editor{
+    min-height: 260px;
+    padding: 14px;
+    color: var(--text);
+}
+
+.editor-card .ql-snow .ql-stroke{ stroke: var(--text); }
+.editor-card .ql-snow .ql-fill{ fill: var(--text); }
+.editor-card .ql-snow .ql-picker{ color: var(--text); }
+
+.editor-card .ql-snow .ql-picker-options{
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.quill-toolbar .ql-formats{
+    margin-right: 10px;
+}
+
+.quill-toolbar button{
+    border-radius: 10px;
+}
+
+.quill-toolbar button.ql-header[data-label]::after{
+    content: attr(data-label);
+    font-weight: 900;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.quill-toolbar button.ql-header svg{
+    display: none;
+}
+
 .mood-group-title{
     margin-top: 10px;
     margin-bottom: 8px;
@@ -104,16 +93,6 @@
     grid-template-columns: 1fr auto;
     gap: 10px;
     align-items: center;
-}
-
-/* Responsive: collapse to single column */
-@media (max-width: 1100px){
-    .today-grid{
-        grid-template-columns: 1fr;
-    }
-    .summary-card{
-        position: static;
-    }
 }
 
 .action-row{
@@ -180,4 +159,3 @@
     justify-content:flex-end;
     gap: 10px;
 }
-

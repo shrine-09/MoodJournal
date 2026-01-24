@@ -49,11 +49,29 @@
                     <label class="label">Content <span class="req">*</span></label>
 
                     <div class="editor-card @(IsReadOnly ? "editor-readonly" : "")">
-                        <!-- IMPORTANT: keep only ONE element with this id in the whole app -->
+                        <div id="mj-toolbar" class="quill-toolbar">
+
+                            <span class="ql-formats">
+                                <button type="button" class="ql-bold"></button>
+                                <button type="button" class="ql-italic"></button>
+                                <button type="button" class="ql-underline"></button>
+                                <button type="button" class="ql-link"></button>
+                            </span>
+
+                            <span class="ql-formats">
+                                <button type="button" class="ql-list" value="ordered"></button>
+                                <button type="button" class="ql-list" value="bullet"></button>
+                            </span>
+
+                            <span class="ql-formats">
+                                <button type="button" class="ql-clean"></button>
+                            </span>
+                        </div>
+
                         <div id="quillEditor" class="quill-host"></div>
                     </div>
 
-                    <div class="hint">Write about your day. Formatting is supported.</div>
+                    <div class="hint">Write about your day.</div>
                 </div>
 
                 <div class="form-block">
@@ -170,54 +188,6 @@
                 }
             </div>
         </div>
-
-        <div class="today-right">
-            <div class="card summary-card">
-                <div class="summary-title">Entry Summary</div>
-                <div class="summary-sub">Quick overview of what will be saved.</div>
-
-                <div class="summary-grid">
-                    <div class="summary-item">
-                        <div class="summary-label">Date</div>
-                        <div class="summary-value">@DateTime.Today.ToString("ddd, MMM d, yyyy")</div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-label">Word Count</div>
-                        <div class="summary-value">@_wordCount</div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-label">Primary Mood</div>
-                        <div class="summary-value">@(!string.IsNullOrWhiteSpace(_primaryMood) ? _primaryMood : "Not selected")</div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-label">Secondary Moods</div>
-                        <div class="summary-value">@(_secondary.Count == 0 ? "None" : string.Join(", ", _secondary))</div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-label">Category</div>
-                        <div class="summary-value">@(!string.IsNullOrWhiteSpace(_category) ? _category : "None")</div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-label">Tags</div>
-                        <div class="summary-value">@(_tags.Count == 0 ? "None" : string.Join(", ", _tags))</div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-label">Status</div>
-                        <div class="summary-value">@(_mode == PageMode.View ? "Saved (Locked)" : "Editing")</div>
-                    </div>
-                </div>
-
-                <div class="summary-note">
-                    Required: Primary Mood and Content must be filled before saving.
-                </div>
-            </div>
-        </div>
     </div>
 
     @if (_showDeleteDialog)
@@ -278,11 +248,9 @@
         if (_quillReady || _initStarted) return;
         _initStarted = true;
 
-        //initilize Quill once per navigation
         await JS.InvokeVoidAsync("initQuill");
         _quillReady = true;
 
-        //restore content
         if (!string.IsNullOrWhiteSpace(_contentHtmlCache))
             await JS.InvokeVoidAsync("setQuillContent", _contentHtmlCache);
 
@@ -291,11 +259,16 @@
 
     public async ValueTask DisposeAsync()
     {
-        //this makes it so that coming back form other page doesnot show blank page
         try
         {
             if (_quillReady)
                 _contentHtmlCache = await JS.InvokeAsync<string>("getQuillContent") ?? "";
+        }
+        catch { }
+
+        try
+        {
+            await JS.InvokeVoidAsync("destroyQuill");
         }
         catch { }
 
@@ -539,20 +512,9 @@
         }
     }
 
-    private static readonly List<string> PositiveMoods = new()
-    {
-        "Happy","Excited","Relaxed","Grateful","Confident"
-    };
-
-    private static readonly List<string> NeutralMoods = new()
-    {
-        "Calm","Thoughtful","Curious","Nostalgic","Bored"
-    };
-
-    private static readonly List<string> NegativeMoods = new()
-    {
-        "Sad","Angry","Stressed","Lonely","Anxious"
-    };
+    private static readonly List<string> PositiveMoods = new() { "Happy","Excited","Relaxed","Grateful","Confident" };
+    private static readonly List<string> NeutralMoods = new() { "Calm","Thoughtful","Curious","Nostalgic","Bored" };
+    private static readonly List<string> NegativeMoods = new() { "Sad","Angry","Stressed","Lonely","Anxious" };
 
     private static readonly List<string> AllMoods =
         PositiveMoods.Concat(NeutralMoods).Concat(NegativeMoods).ToList();
