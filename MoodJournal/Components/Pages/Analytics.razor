@@ -43,7 +43,6 @@
     {
         <div class="analytics-grid">
 
-            <!-- Mood Distribution -->
             <div class="card chart-card">
                 <div class="chart-title">Mood Distribution (Positive / Neutral / Negative)</div>
 
@@ -74,45 +73,23 @@
                 </div>
             </div>
 
-            <!-- Frequent moods -->
             <div class="card chart-card">
-                <div class="chart-title">
-                    Frequent Moods (Top)
-                    <div class="mini-toggle">
-                        <button type="button" class="pill-btn @(ShowMoodCloud ? "" : "is-active")" @onclick="() => ShowMoodCloud = false">Bars</button>
-                        <button type="button" class="pill-btn @(ShowMoodCloud ? "is-active" : "")" @onclick="() => ShowMoodCloud = true">Word cloud</button>
-                    </div>
-                </div>
+                <div class="chart-title">Frequent Moods (Top)</div>
 
-                @if (!ShowMoodCloud)
-                {
-                    <div class="bars">
-                        @foreach (var item in TopMoods)
-                        {
-                            <div class="bar-row">
-                                <div class="bar-label">@item.Name</div>
-                                <div class="bar-track">
-                                    <div class="bar-fill" style="width:@item.WidthPct.ToString("0.#", CultureInfo.InvariantCulture)%"></div>
-                                </div>
-                                <div class="bar-value">@item.Count</div>
+                <div class="bars">
+                    @foreach (var item in TopMoods)
+                    {
+                        <div class="bar-row">
+                            <div class="bar-label">@item.Name</div>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width:@item.WidthPct.ToString("0.#", CultureInfo.InvariantCulture)%"></div>
                             </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="cloud">
-                        @foreach (var item in TopMoods)
-                        {
-                            <span class="cloud-word" style="font-size:@item.CloudSizePx.ToString("0.#", CultureInfo.InvariantCulture)px">
-                                @item.Name
-                            </span>
-                        }
-                    </div>
-                }
+                            <div class="bar-value">@item.Count</div>
+                        </div>
+                    }
+                </div>
             </div>
 
-            <!-- Most used tags -->
             <div class="card chart-card">
                 <div class="chart-title">Most Used Tags (Top)</div>
 
@@ -130,7 +107,6 @@
                 </div>
             </div>
 
-            <!-- Tag breakdown -->
             <div class="card chart-card">
                 <div class="chart-title">Tag Breakdown (% of entries)</div>
 
@@ -150,17 +126,13 @@
                 <div class="subtle chart-foot">Based on entries that include the tag (each tag counted once per entry).</div>
             </div>
 
-            <!-- Word Count Trends -->
             <div class="card chart-card chart-span-2">
                 <div class="chart-title">Word Count Trends (Monthly Average)</div>
 
                 <div class="trend-wrap">
                     <svg class="trend-svg" viewBox="0 0 700 220" preserveAspectRatio="none" aria-label="Word count trend">
-                        <!-- axes -->
                         <line x1="40" y1="20" x2="40" y2="190" class="axis" />
                         <line x1="40" y1="190" x2="680" y2="190" class="axis" />
-
-                        <!-- line -->
                         <polyline points="@TrendPoints" class="trend-line" />
                     </svg>
 
@@ -192,9 +164,6 @@
     private DateTime FromApplied;
     private DateTime ToApplied;
 
-    private bool ShowMoodCloud = false;
-
-    // Mood sets
     private static readonly HashSet<string> Positive = new(StringComparer.OrdinalIgnoreCase)
     { "Happy","Excited","Relaxed","Grateful","Confident" };
 
@@ -204,7 +173,6 @@
     private static readonly HashSet<string> Negative = new(StringComparer.OrdinalIgnoreCase)
     { "Sad","Angry","Stressed","Lonely","Anxious" };
 
-    // Computed outputs
     private int FilteredCount => _filtered.Count;
 
     private string FromAppliedLabel => FromApplied.ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
@@ -212,7 +180,6 @@
 
     private double PosPct, NeuPct, NegPct;
     private string MoodDistText = "";
-
     private string MoodPieStyle => BuildPieStyle(PosPct, NeuPct, NegPct);
 
     private int AvgWords = 0;
@@ -318,8 +285,7 @@
         {
             Name = x.Name,
             Count = x.Count,
-            WidthPct = x.Count * 100.0 / max,
-            CloudSizePx = 12 + (x.Count * 18.0 / max) 
+            WidthPct = x.Count * 100.0 / max
         }).ToList();
     }
 
@@ -334,17 +300,12 @@
             if (tags.Count == 0) continue;
 
             foreach (var t in tags)
-            {
                 tagUseCounts[t] = tagUseCounts.TryGetValue(t, out var c) ? c + 1 : 1;
-            }
 
             foreach (var t in tags.Distinct(StringComparer.OrdinalIgnoreCase))
-            {
                 tagEntryCounts[t] = tagEntryCounts.TryGetValue(t, out var c) ? c + 1 : 1;
-            }
         }
 
-        //most used tags (by occurrences)
         var topUse = tagUseCounts
             .OrderByDescending(kv => kv.Value)
             .ThenBy(kv => kv.Key)
@@ -357,11 +318,9 @@
         {
             Name = x.Key,
             Count = x.Value,
-            WidthPct = x.Value * 100.0 / maxUse,
-            CloudSizePx = 0
+            WidthPct = x.Value * 100.0 / maxUse
         }).ToList();
 
-        //breakdown (% of entries containing tag)
         var totalEntries = Math.Max(1, _filtered.Count);
 
         var topBreak = tagEntryCounts
@@ -385,7 +344,6 @@
 
     private void ComputeWordTrendsMonthly()
     {
-        //monthly avg words per entry
         var grouped = _filtered
             .Select(e =>
             {
@@ -416,18 +374,15 @@
 
     private static string BuildTrendPoints(List<double> values)
     {
-        //SVG frame
         const double left = 40;
         const double right = 680;
         const double top = 20;
         const double bottom = 190;
 
-        if (values.Count == 0)
-            return "";
+        if (values.Count == 0) return "";
 
         if (values.Count == 1)
         {
-            // single point (flat)
             var y = bottom - 0.5 * (bottom - top);
             return $"{left},{y} {right},{y}";
         }
@@ -501,7 +456,6 @@
         public string Name { get; set; } = "";
         public int Count { get; set; }
         public double WidthPct { get; set; }
-        public double CloudSizePx { get; set; }
     }
 
     private sealed class TagBreakRow
